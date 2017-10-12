@@ -42,7 +42,7 @@ class Resource(UI.Resource):
         self["BRUSH_ANCHOR_FAIL"] = wx.Brush(self["COLOR_ANCHOR_FAIL"])
         # Font
         self.SetMainFont(9, self["FONTFACE_MAIN"])
-        self["FONT_CANVAS"] = wx.Font(11, 70, 90, wx.FONTWEIGHT_BOLD, False, self["FONTFACE_CANVAS"])
+        self["FONT_CANVAS"] = wx.Font(10, 70, 90, wx.FONTWEIGHT_BOLD, False, self["FONTFACE_CANVAS"])
         # IMG_ICON
         self["ICON"] = Img.ICON.GetIcon()
         # Bitmap

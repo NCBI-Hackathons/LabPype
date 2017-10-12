@@ -6,7 +6,7 @@ from DynaUI import Locale
 __all__ = ["Locale"]
 
 Locale.DEFAULT = {
-    "TITLE"               : "ExpCanvas",
+    "TITLE"               : "ExpCatalyst",
     "GROUP_NONE"          : "* Ungrouped *",  # value is used as a key
     "GROUP_NEW"           : "New Group",
 
