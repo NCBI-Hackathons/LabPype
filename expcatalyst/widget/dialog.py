@@ -191,6 +191,7 @@ class Dialog(UI.BaseMain):
                 (self.Sash, SF_SASH)
             ))
             self.Harbor.SetActualSize()
+            self.Harbor.ReDraw()
             if not self.Harbor.IsShown():
                 self.Harbor.GetParent().HiderR.Click()
             self.Widget.Canvas.ReDraw()
@@ -221,6 +222,7 @@ class Dialog(UI.BaseMain):
         self.Harbor.Inner.GetSizer().Detach(self)
         self.Harbor.Inner.GetSizer().Detach(self.Sash)
         self.Harbor.SetActualSize()
+        self.Harbor.ReDraw()
         self.Head.Destroy()
         self.Sash.Destroy()
 

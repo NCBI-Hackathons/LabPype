@@ -3,8 +3,8 @@
 
 import os
 
-PINEAPPLE_PATH = os.path.dirname(os.path.realpath(__file__))
-PineappleHere = lambda path="", f="": os.path.join(os.path.join(PINEAPPLE_PATH, path), f)
+MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
+Here = lambda path="", f="": os.path.join(os.path.join(MAIN_PATH, path), f)
 
 
 def avg(data):

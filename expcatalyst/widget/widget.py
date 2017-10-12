@@ -59,7 +59,7 @@ class Thread(threading.Thread):
             with self.Widget.Lock:
                 if self.Widget.state == WIDGET_STATE_WORK and self.Widget.Thread == self:
                     self.Widget["OUT"] = out
-                self.Widget.OnFail() if out is None else self.Widget.OnDone()
+                    self.Widget.OnFail() if out is None else self.Widget.OnDone()
         except Interrupted:
             pass
         except Exception:

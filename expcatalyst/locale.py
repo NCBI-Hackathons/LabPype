@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-from ProjectUI import Locale
+from DynaUI import Locale
 
 __all__ = ["Locale"]
 
