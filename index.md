@@ -45,7 +45,7 @@ Show the sequence loaded
 Saves input(s) to a sequence file  
 ![d2](assets/img/d2.png)
 
-##### Some more interesting tasks:
+#### Some more interesting tasks:
 Convert a file to another format  
 ![d3](assets/img/d3.png)
 
