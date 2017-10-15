@@ -19,7 +19,7 @@ class Passer(Widget):
     INCOMING = ANCHOR_ALL, "DATA", False, "L", "", AnchorFCFS
     OUTGOING = ANCHOR_ALL, "", AnchorFCFS
 
-    def Function(self):
+    def Task(self):
         return self["DATA"]
 
 
@@ -38,5 +38,5 @@ class Condition(Widget):
             return "T: Sending Top" if bool(self["TEST"]) else "F: Sending Bottom"
         return self.NAME
 
-    def Function(self):
+    def Task(self):
         return self["VALUE_T"] if bool(self["TEST"]) else self["VALUE_F"]

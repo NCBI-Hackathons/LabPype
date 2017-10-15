@@ -25,7 +25,7 @@ class Number(Widget):
         if self["OUT"] is not None:
             return str(self["OUT"])
 
-    def Function(self):
+    def Task(self):
         return self["NUMBER"]
 
 
@@ -41,5 +41,5 @@ class RandomInt(Widget):
         if self["OUT"] is not None:
             return str(self["OUT"])
 
-    def Function(self):
+    def Task(self):
         return randint(self["MIN"], self["MAX"])

@@ -21,7 +21,7 @@ class Summer(Widget):
     def GetName(self):
         return "+".join(str(i) for i in self["NUMBERS"]) + "=" + str(self["OUT"]) if self.IsDone() else self.NAME
 
-    def Function(self):
+    def Task(self):
         sleep(1)
         return sum(self["NUMBERS"])
 
@@ -37,7 +37,7 @@ class Multiplier(Widget):
     def GetName(self):
         return "*".join(str(i) for i in self["NUMBERS"]) + "=" + str(self["OUT"]) if self.IsDone() else self.NAME
 
-    def Function(self):
+    def Task(self):
         t = threading.currentThread()
         p = 1
         for i in self["NUMBERS"]:

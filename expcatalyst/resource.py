@@ -15,6 +15,7 @@ class Resource(UI.Resource):
         for key, default in {
             "FONTFACE_CANVAS"  : wx.SystemSettings().GetFont(wx.SYS_DEFAULT_GUI_FONT).GetFaceName(),
             "FONTFACE_MAIN"    : wx.SystemSettings().GetFont(wx.SYS_DEFAULT_GUI_FONT).GetFaceName(),
+            "FONTFACE_FIXED"   : "Consolas",
             "COLOR_CONNECTION" : "#bbbbbb",
             "COLOR_SELECTION"  : "#00c0ff",
             "COLOR_WIDGET_DONE": "#00ff00",
@@ -43,6 +44,7 @@ class Resource(UI.Resource):
         # Font
         self.SetMainFont(9, self["FONTFACE_MAIN"])
         self["FONT_CANVAS"] = wx.Font(10, 70, 90, wx.FONTWEIGHT_BOLD, False, self["FONTFACE_CANVAS"])
+        self["FONT_FIXED"] = wx.Font(10, 70, 90, 90, False, self["FONTFACE_FIXED"])
         # IMG_ICON
         self["ICON"] = Img.ICON.GetIcon()
         # Bitmap

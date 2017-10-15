@@ -55,7 +55,7 @@ class Thread(threading.Thread):
 
     def run(self):
         try:
-            out = self.Widget.Function()
+            out = self.Widget.Task()
             with self.Widget.Lock:
                 if self.Widget.state == WIDGET_STATE_WORK and self.Widget.Thread == self:
                     self.Widget["OUT"] = out
@@ -80,7 +80,7 @@ class Thread(threading.Thread):
 #       OUTGOING  -  AnchorType of the data sending out.
 #   The following methods should be re-implemented:
 #       GetName   -  How canvas display the name of this widget. Default is cls.NAME
-#       Function  -  to do
+#       Task  -  to do
 #   Destroy must be called when deleting the widget to (i)clear links; (ii)close dialog; (iii)stop thread; (iv)release id
 # ======================================================= Widget =======================================================
 class Widget(wx.EvtHandler, Base):
@@ -319,7 +319,7 @@ class Widget(wx.EvtHandler, Base):
             self.Thread.start()
         else:
             try:
-                self["OUT"] = self.Function()
+                self["OUT"] = self.Task()
                 self.OnFail() if self["OUT"] is None else self.OnDone()
             except Exception:
                 self.OnFail()
@@ -343,7 +343,7 @@ class Widget(wx.EvtHandler, Base):
                 self.Canvas.WidgetRunning(0)
             if state == WIDGET_STATE_WORK:
                 self.Canvas.WidgetRunning(1)
-            if self.THREAD and self.INCOMING and self.Dialog:
+            if self.THREAD and self.Dialog:
                 if state in (WIDGET_STATE_WORK, WIDGET_STATE_WAIT):
                     self.Dialog[3].Hide()
                     self.Dialog[4].Show()
@@ -467,7 +467,7 @@ class Widget(wx.EvtHandler, Base):
     def GetName(self):
         return self.NAME
 
-    def Function(self):
+    def Task(self):
         return False
 
     def Save(self):

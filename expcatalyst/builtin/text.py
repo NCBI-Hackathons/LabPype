@@ -19,7 +19,7 @@ class Line(Widget):
     INCOMING = None
     OUTGOING = ANCHOR_TEXT
 
-    def Function(self):
+    def Task(self):
         return self["TEXT"]
 
     def IsInternalAvailable(self):
@@ -39,7 +39,7 @@ class Text(Widget):
     def GetName(self):
         return self["NAME"]
 
-    def Function(self):
+    def Task(self):
         return self["TEXT"]
 
     def IsInternalAvailable(self):

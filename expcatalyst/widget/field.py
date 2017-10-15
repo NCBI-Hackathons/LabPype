@@ -8,7 +8,7 @@ __all__ = [
     "TextField",
     "IntegerField",
     "FloatField",
-    # "FileField",
+    "FileField",
     # "FilePathField",
     # "EmailField",
     # "URLField",
@@ -19,9 +19,11 @@ __all__ = [
 
 # ----------------------------------------------
 class BaseField(object):
-    def __init__(self, key, label):
+    def __init__(self, key, label, *args, **kwargs):
         self.key = key
         self.label = label
+        self.args = args
+        self.kwargs = kwargs
 
     def Validate(self, value):
         pass
@@ -29,8 +31,8 @@ class BaseField(object):
 
 # ----------------------------------------------
 class BooleanField(BaseField):
-    def __init__(self, key, label, tag1, tag2):
-        super().__init__(key=key, label=label)
+    def __init__(self, key, label, tag1, tag2, *args, **kwargs):
+        super().__init__(key=key, label=label, *args, **kwargs)
         self.tag1 = tag1
         self.tag2 = tag2
 
@@ -40,8 +42,8 @@ class BooleanField(BaseField):
 
 # ----------------------------------------------
 class LineField(BaseField):
-    def __init__(self, key, label, maxLength=None, minLength=None, hint=""):
-        super().__init__(key=key, label=label)
+    def __init__(self, key, label, maxLength=None, minLength=None, hint="", *args, **kwargs):
+        super().__init__(key=key, label=label, *args, **kwargs)
         self.hint = hint
         self.maxLength = maxLength
         self.minLength = minLength
@@ -57,8 +59,8 @@ class LineField(BaseField):
 
 # ----------------------------------------------
 class TextField(BaseField):
-    def __init__(self, key, label, maxLine=None, minLine=None, maxLength=None, minLength=None):
-        super().__init__(key=key, label=label)
+    def __init__(self, key, label, maxLine=None, minLine=None, maxLength=None, minLength=None, *args, **kwargs):
+        super().__init__(key=key, label=label, *args, **kwargs)
         self.maxLine = maxLine
         self.minLine = minLine
         self.maxLength = maxLength
@@ -80,8 +82,8 @@ class TextField(BaseField):
 
 # ----------------------------------------------
 class IntegerField(BaseField):
-    def __init__(self, key, label, maxValue=None, minValue=None):
-        super().__init__(key=key, label=label)
+    def __init__(self, key, label, maxValue=None, minValue=None, *args, **kwargs):
+        super().__init__(key=key, label=label, *args, **kwargs)
         self.maxValue = maxValue
         self.minValue = minValue
 
@@ -101,8 +103,8 @@ class IntegerField(BaseField):
 
 # ----------------------------------------------
 class FloatField(BaseField):
-    def __init__(self, key, label, maxValue=None, minValue=None):
-        super().__init__(key=key, label=label)
+    def __init__(self, key, label, maxValue=None, minValue=None, *args, **kwargs):
+        super().__init__(key=key, label=label, *args, **kwargs)
         self.maxValue = maxValue
         self.minValue = minValue
 
@@ -120,12 +122,10 @@ class FloatField(BaseField):
 
 # ----------------------------------------------
 class ChoiceField(BaseField):
-    def __init__(self, key, label, choices=(), useListBox=True, w=-1, h=-1):
-        super().__init__(key=key, label=label)
+    def __init__(self, key, label, choices=(), useListBox=False, *args, **kwargs):
+        super().__init__(key=key, label=label, *args, **kwargs)
         self.choices = choices
         self.useListBox = useListBox
-        self.w = w
-        self.h = h
 
     def Validate(self, value):
         if value < 0:
@@ -134,14 +134,14 @@ class ChoiceField(BaseField):
             return None
         return self.choices[value]
 
-# ----------------------------------------------
-# class FileField(BaseField):
-#     def __init__(self, key, label):
-#         super().__init__(key=key, label=label)
-#
-#     def Validate(self, value):
-#         return value
 
+# ----------------------------------------------
+class FileField(BaseField):
+    def __init__(self, key, label, *args, **kwargs):
+        super().__init__(key=key, label=label, *args, **kwargs)
+
+    def Validate(self, value):
+        return value
 
 # ----------------------------------------------
 # class FilePathField(BaseField):
