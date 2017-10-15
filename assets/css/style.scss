@@ -14,6 +14,11 @@ body {
 }
 img {
     max-width: 960px;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    -moz-box-shadow: none !important;
+    -o-box-shadow: none !important;
+    -ms-box-shadow: none !important;
 }
 h1, h2, h3, h4, h5, h6 {
     color: #ffffff;
