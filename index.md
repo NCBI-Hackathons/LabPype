@@ -31,35 +31,26 @@ You're right to think that the description above is rather verbose. Yet, it stil
 ![w4](assets/img/w4.png)
 
 ## For dry lab tasks:
-This example shows what users can do with just four widgets:
-
+This example shows what users can do with just four widgets:  
 ![d0](assets/img/d0.png)
 
-**LoadFile** - loads a FASTA or GenBank file, and sends sequence records to downstream widgets
-
-**SaveFile** - saves the records received from upstream widgets to either FASTA or GenBank file
-
-**NewRecord** - lets user input sequence directly
-
+**LoadFile** - loads a FASTA or GenBank file, and sends sequence records to downstream widgets  
+**SaveFile** - saves the records received from upstream widgets to either FASTA or GenBank file  
+**NewRecord** - lets user input sequence directly  
 **ViewSequence** - shows the sequences sent to it
 
-Show the sequence loaded
-
+Show the sequence loaded  
 ![d1](assets/img/d1.png)
 
-Save input(s) to a sequence file
-
+Save input(s) to a sequence file  
 ![d2](assets/img/d2.png)
 
 ##### Some more interesting tasks:
-Convert a file to another format
+Convert a file to another format  
+![d3](assets/img/d3.png)  
 
-![d3](assets/img/d3.png)
-
-Merge files
-
+Merge files  
 ![d4](assets/img/d4.png)
 
-Save files and direct input to a new file
-
+Save files and direct input to a new file  
 ![d5](assets/img/d5.png)
