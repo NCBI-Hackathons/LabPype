@@ -45,12 +45,13 @@ class Anchor(Base):
         self.key = key
         self.multiple = multiple
         self.send = send
-        self.pos = pos.strip("-")
+        self.posAllowed = pos
         self.name = name
 
+        self.posAuto = len(self.posAllowed) > 1
+        self.pos = self.posAllowed[0]
         self.single = not multiple
         self.recv = not send
-        self.posAuto = "-" in pos
         self.rect.SetSize((18, 18))
         self.connected = []
         self.pointing = None
@@ -146,7 +147,7 @@ class Anchor(Base):
         self.Canvas.RemoveLink(self, dest)
         dest.Widget.OnSetIncoming()
 
-    def SetTarget(self, dest,sendEvent=True):  # self always send, dest always recv
+    def SetTarget(self, dest, sendEvent=True):  # self always send, dest always recv
         if DetectCircularReference(dest.Widget, self.Widget):  # Check the opposite send
             return self.Canvas.GetParent().SetStatus(self.Canvas.L["MSG_CIRCULAR_LINKAGE"], 1, 5)
         if dest in self.connected:

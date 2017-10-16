@@ -153,7 +153,7 @@ class Dialog(UI.BaseMain):
                     self.Auto[key] = self.AddTextCtrl(sizer=Sizer, label=label, value=self.GetDefaultData(key, ""), *f.args, **f.kwargs).GetValue
                 elif isinstance(f, ChoiceField):
                     choices = tuple(self.L.Get(i, "WIDGET_DLG_") if isinstance(i, str) else str(i) for i in f.choices)
-                    selected = f.choices.index(self.Widget[key]) if self.Widget[key] is not None else -1
+                    selected = -1 if self.Widget[key] is None else f.choices.index(self.Widget[key])
                     if f.useListBox:
                         self.Auto[key] = self.AddListBox(sizer=Sizer, label=label, choices=choices, selected=selected, *f.args, **f.kwargs).GetSelection
                     else:

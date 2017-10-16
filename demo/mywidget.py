@@ -15,15 +15,22 @@ class Summer(Widget):
     DIALOG = Di.Number
     THREAD = True
     INTERNAL = None
-    INCOMING = ANCHOR_NUMBERS, "NUMBERS", True, "L", "Number"
+    INCOMING = ANCHOR_NUMBERS, "NUMBERS", True, "LTB", "Number"
     OUTGOING = ANCHOR_NUMBER
 
-    def GetName(self):
-        return "+".join(str(i) for i in self["NUMBERS"]) + "=" + str(self["OUT"]) if self.IsDone() else self.NAME
+    def Name(self):
+        if self.IsDone():
+            return "+".join(str(i) for i in self["NUMBERS"]) + "=" + str(self["OUT"])
 
     def Task(self):
-        sleep(1)
-        return sum(self["NUMBERS"])
+        t = threading.currentThread()
+        p = 0
+        for i in self["NUMBERS"]:
+            sleep(0.5)
+            if t.Stopped():
+                raise Interrupted
+            p += i
+        return p
 
 
 class Multiplier(Widget):
@@ -31,11 +38,12 @@ class Multiplier(Widget):
     DIALOG = Di.Number
     THREAD = True
     INTERNAL = None
-    INCOMING = ANCHOR_NUMBERS, "NUMBERS", True, "L", "Number"
+    INCOMING = ANCHOR_NUMBERS, "NUMBERS", True, "LTB", "Number"
     OUTGOING = ANCHOR_NUMBER
 
-    def GetName(self):
-        return "*".join(str(i) for i in self["NUMBERS"]) + "=" + str(self["OUT"]) if self.IsDone() else self.NAME
+    def Name(self):
+        if self.IsDone():
+            return "*".join(str(i) for i in self["NUMBERS"]) + "=" + str(self["OUT"])
 
     def Task(self):
         t = threading.currentThread()

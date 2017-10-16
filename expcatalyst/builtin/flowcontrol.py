@@ -33,10 +33,9 @@ class Condition(Widget):
                (ANCHOR_ALL, "VALUE_F", False, "B", "Value passed if condition false", AnchorFCFS)
     OUTGOING = ANCHOR_ALL, "", AnchorFCFS
 
-    def GetName(self):
+    def Name(self):
         if self["TEST"] is not None:
             return "T: Sending Top" if bool(self["TEST"]) else "F: Sending Bottom"
-        return self.NAME
 
     def Task(self):
         return self["VALUE_T"] if bool(self["TEST"]) else self["VALUE_F"]

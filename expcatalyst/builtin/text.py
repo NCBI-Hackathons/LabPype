@@ -36,7 +36,7 @@ class Text(Widget):
     INCOMING = None
     OUTGOING = ANCHOR_TEXT
 
-    def GetName(self):
+    def Name(self):
         return self["NAME"]
 
     def Task(self):

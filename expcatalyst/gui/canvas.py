@@ -325,7 +325,7 @@ class Canvas(UI.BaseControl):
             elif isinstance(newObj, Anchor):
                 self.SetStatus(newObj.GetName())
             elif isinstance(newObj, tuple):
-                self.SetStatus("%s (%s) => %s (%s)" % (newObj[0].Widget.name, newObj[0].GetName(), newObj[1].Widget.name, newObj[1].GetName()), 1)
+                self.SetStatus("%s (%s) => %s (%s)" % (newObj[0].Widget.name, newObj[0].name, newObj[1].Widget.name, newObj[1].name), 1)
             else:
                 self.SetStatus("")
             return True

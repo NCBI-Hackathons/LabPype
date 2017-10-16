@@ -21,7 +21,7 @@ class Number(Widget):
     INCOMING = None
     OUTGOING = ANCHOR_NUMBER
 
-    def GetName(self):
+    def Name(self):
         if self["OUT"] is not None:
             return str(self["OUT"])
 
@@ -37,7 +37,7 @@ class RandomInt(Widget):
     INCOMING = None
     OUTGOING = ANCHOR_NUMBER
 
-    def GetName(self):
+    def Name(self):
         if self["OUT"] is not None:
             return str(self["OUT"])
 

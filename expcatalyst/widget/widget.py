@@ -68,6 +68,14 @@ class Thread(threading.Thread):
                     self.Widget.OnFail()
 
 
+def Synced(func):
+    def SyncedFunc(self, *args, **kwargs):
+        with self.Lock:
+            return func(self, *args, **kwargs)
+
+    return SyncedFunc
+
+
 # ================================================== How to Subclass ===================================================
 # Rules:
 #   Widget subclasses should have the following class properties:
@@ -79,8 +87,10 @@ class Thread(threading.Thread):
 #       INCOMING  -  Incoming anchor definitions: (AnchorType, KEY:str, IsMultiple:bool, Position:int, Name:str("")) [, (more anchors...)]
 #       OUTGOING  -  AnchorType of the data sending out.
 #   The following methods should be re-implemented:
-#       GetName   -  How canvas display the name of this widget. Default is cls.NAME
-#       Task  -  to do
+#       Name      -  How canvas display the name of this widget. Default is cls.NAME
+#       Task      -  to do
+#       Save      -  to do
+#       Load      -  to do
 #   Destroy must be called when deleting the widget to (i)clear links; (ii)close dialog; (iii)stop thread; (iv)release id
 # ======================================================= Widget =======================================================
 class Widget(wx.EvtHandler, Base):
@@ -128,11 +138,13 @@ class Widget(wx.EvtHandler, Base):
         self.dialogPos = None
         self.Dialog = None
         self.Thread = None
-        self.Lock = threading.Lock()
+        self.Lock = threading.RLock()
         self.Data = {}
         self.Anchors = []
         self.Incoming = []
         self.Outgoing = []
+        self.Key2Anchor = {}
+        self.Pos2Anchor = {"L": [], "T": [], "R": [], "B": []}
         if self.INTERNAL:
             for field in self.INTERNAL:
                 self.Data[field.key if isinstance(field, BaseField) else field] = None
@@ -140,7 +152,7 @@ class Widget(wx.EvtHandler, Base):
             for args in self.INCOMING:
                 self.AddAnchor(False, *args)
         if self.OUTGOING:
-            self.AddAnchor(True, self.OUTGOING[0], "OUT", True, "R" if self.INCOMING else "-R", self.OUTGOING[1], self.OUTGOING[2])
+            self.AddAnchor(True, self.OUTGOING[0], "OUT", True, "RTB", self.OUTGOING[1], self.OUTGOING[2])
 
     def __setitem__(self, key, value):
         self.Data[key] = value
@@ -152,7 +164,9 @@ class Widget(wx.EvtHandler, Base):
         a = (anchor or An.Anchor)(self, aType, key, multiple, send, pos, self.Canvas.L.Get(name, "ANCHOR_NAME_"))
         (self.Outgoing if send else self.Incoming).append(a)
         self.Anchors.append(a)
-        self[a.key] = None
+        self.Data[key] = None
+        self.Key2Anchor[key] = a
+        self.Pos2Anchor[a.pos].append(a)
 
     def Destroy(self):
         self.Stop()
@@ -165,9 +179,6 @@ class Widget(wx.EvtHandler, Base):
             IdPool.Release(a.Id)
         IdPool.Release(self.Id)
 
-    def NewNamePosition(self):
-        self.namePos = self.x + 28 - GetTextExtent(self.Canvas, self.name)[0] // 2, self.y - 20 if len(self.Anchors) == 1 and self.Anchors[0].pos == "B" else self.y + 64
-
     def NewPosition(self, x, y):
         if self.Canvas.S["TOGGLE_SNAP"]:
             x = x >> 5 << 5
@@ -176,31 +187,50 @@ class Widget(wx.EvtHandler, Base):
         self.y = y
         self.rect.SetPosition((x, y))
         self.rectSelect.SetPosition((x - 6, y - 6))
-        self.NewNamePosition()
+        self.PositionName()
+        self.PositionAnchor()
+
+    def PositionAnchor(self):
         for a in self.Anchors:
             if a.posAuto and a.connected:
+                self.Pos2Anchor[a.pos].remove(a)
                 x = sum(i.x for i in a.connected) / len(a.connected) - self.x - 25
                 y = sum(i.y for i in a.connected) / len(a.connected) - self.y - 25
                 theta = math.atan2(y, x) * 4
-                if -4.0 * math.pi <= theta < -math.pi:
+                if -3.0 * math.pi <= theta < -math.pi and "T" in a.posAllowed:
                     a.pos = "T"
-                elif -math.pi <= theta < math.pi:
+                elif -math.pi <= theta < math.pi and "R" in a.posAllowed:
                     a.pos = "R"
-                elif math.pi <= theta < 4 * math.pi:
+                elif math.pi <= theta < 3 * math.pi and "B" in a.posAllowed:
                     a.pos = "B"
-            if a.pos == "L":
-                ax = -6
-            elif a.pos == "R":
-                ax = 56
-            else:
-                ax = 25
-            if a.pos == "T":
-                ay = -6
-            elif a.pos == "B":
-                ay = 56
-            else:
-                ay = 25
-            a.SetPosition(self.x + ax, self.y + ay)
+                elif "L" in a.posAllowed:
+                    a.pos = "L"
+                self.Pos2Anchor[a.pos].append(a)
+        for p in "LRTB":
+            n = len(self.Pos2Anchor[p])
+            if n == 1:
+                self._PositionAnchor(self.Pos2Anchor[p][0])
+            elif n > 1:
+                for index, a in enumerate(self.Pos2Anchor[p]):
+                    self._PositionAnchor(a, index * 18 + (1 - n) * 9)
+
+    def _PositionAnchor(self, a, offset=0):
+        if a.pos == "L":
+            ax = -6
+        elif a.pos == "R":
+            ax = 56
+        else:
+            ax = 25 + offset
+        if a.pos == "T":
+            ay = -6
+        elif a.pos == "B":
+            ay = 56
+        else:
+            ay = 25 + offset
+        a.SetPosition(self.x + ax, self.y + ay)
+
+    def PositionName(self):
+        self.namePos = self.x + 28 - GetTextExtent(self.Canvas, self.name)[0] // 2, self.y - 20 if len(self.Anchors) == 1 and self.Anchors[0].pos == "B" else self.y + 64
 
     def Draw(self, dc):
         key = "WIDGET_CANVAS"
@@ -226,10 +256,14 @@ class Widget(wx.EvtHandler, Base):
             for a in self.Anchors:
                 a.Draw(dc)
 
-    # ----------------------------------------------
-    def GetLinkedWidget(self):
-        for a in self.Anchors:
-            for dest in a.connected:
+    # ----------------------------------------------------------
+    def GetLinkedWidget(self, key=None):
+        if key is None:
+            for a in self.Anchors:
+                for dest in a.connected:
+                    yield dest.Widget
+        else:
+            for dest in self.Key2Anchor[key]:
                 yield dest.Widget
 
     def GetOutgoingWidget(self):
@@ -244,12 +278,12 @@ class Widget(wx.EvtHandler, Base):
 
     def PostToOutgoingWidget(self, evtType, state=WIDGET_STATE):
         for w in self.GetOutgoingWidget():
-            if w.state & state:
+            if w.IsState(state):
                 wx.PostEvent(w, WidgetEvent(evtType=evtType))
 
     def PostToIncomingWidget(self, evtType, state=WIDGET_STATE):
         for w in self.GetIncomingWidget():
-            if w.state & state:
+            if w.IsState(state):
                 wx.PostEvent(w, WidgetEvent(evtType=evtType))
 
     def IsOutgoingAvailable(self):
@@ -272,14 +306,17 @@ class Widget(wx.EvtHandler, Base):
 
     def InitData(self):
         for a in self.Incoming:
-            if a.multiple:
-                self[a.key] = [dest.Widget[dest.key] for dest in a.connected] if a.connected else None
+            if a.connected:
+                if a.multiple:
+                    self[a.key] = [dest.Widget[dest.key] for dest in a.connected]
+                else:
+                    self[a.key] = a.connected[0].Widget[a.connected[0].key]
             else:
-                self[a.key] = a.connected[0].Widget[a.connected[0].key] if a.connected else None
+                self[a.key] = None
         for a in self.Outgoing:
             self[a.key] = None
 
-    # ----------------------- User Event -----------------------
+    # ----------------------------------------------------------
     def OnActivation(self):
         if self.Dialog:
             if self.Dialog.detached:
@@ -324,52 +361,71 @@ class Widget(wx.EvtHandler, Base):
             except Exception:
                 self.OnFail()
 
+    @Synced
+    def IsIdle(self):
+        return self.state == WIDGET_STATE_IDLE
+
+    @Synced
     def IsDone(self):
         return self.state == WIDGET_STATE_DONE
 
+    @Synced
+    def IsFailed(self):
+        return self.state == WIDGET_STATE_FAIL
+
+    @Synced
     def IsWorking(self):
         return self.state == WIDGET_STATE_WORK
 
+    @Synced
     def IsWaiting(self):
         return self.state == WIDGET_STATE_WAIT
 
+    @Synced
     def IsRunning(self):
         return self.state in (WIDGET_STATE_WORK, WIDGET_STATE_WAIT)
 
-    # ----------------------- Self Event -----------------------
+    @Synced
+    def IsState(self, state):
+        return self.state & state
+
+    # ----------------------------------------------------------
+    @Synced
     def SetState(self, state):
-        with self.Lock:
-            if self.state == WIDGET_STATE_WORK:
-                self.Canvas.WidgetRunning(0)
-            if state == WIDGET_STATE_WORK:
-                self.Canvas.WidgetRunning(1)
-            if self.THREAD and self.Dialog:
-                if state in (WIDGET_STATE_WORK, WIDGET_STATE_WAIT):
-                    self.Dialog[3].Hide()
-                    self.Dialog[4].Show()
-                else:
-                    self.Dialog[4].Hide()
-                    self.Dialog[3].Show()
-                self.Dialog.Layout()
-            self.state = state
-            self.stateHandler = getattr(self, STATE_HANDLER[state])
-            name = self.GetName()
-            self.name = name if name is not None else self.NAME
-            self.NewNamePosition()
-            self.Canvas.ReDraw()
+        if self.state == WIDGET_STATE_WORK:
+            self.Canvas.WidgetRunning(0)
+        if state == WIDGET_STATE_WORK:
+            self.Canvas.WidgetRunning(1)
+        if self.THREAD and self.Dialog:
+            if state in (WIDGET_STATE_WORK, WIDGET_STATE_WAIT):
+                self.Dialog[3].Hide()
+                self.Dialog[4].Show()
+            else:
+                self.Dialog[4].Hide()
+                self.Dialog[3].Show()
+            self.Dialog.Layout()
+        self.state = state
+        self.stateHandler = getattr(self, STATE_HANDLER[state])
+        self.SetName()
+        self.Canvas.ReDraw()
+
+    def SetName(self):
+        name = self.Name()
+        self.name = self.NAME if name is None else name
+        self.PositionName()
 
     def SaveData(self):
         return self.Save()
 
     def LoadData(self, f):
         self.Data = self.Load(f)
-        name = self.GetName()
-        self.name = name if name is not None else self.NAME
-        self.NewNamePosition()
+        self.SetName()
 
+    @Synced
     def SaveState(self):
         return (self.state & 0b10011) or 1
 
+    @Synced
     def LoadState(self, state):
         self.state = state
         self.stateHandler = getattr(self, STATE_HANDLER[state])
@@ -463,8 +519,8 @@ class Widget(wx.EvtHandler, Base):
             self.PostToOutgoingWidget(EVT_WIDGET_CHANGE)
             self.Run()
 
-    # ------------------------ Override ------------------------
-    def GetName(self):
+    # ----------------------------------------------------------
+    def Name(self):
         return self.NAME
 
     def Task(self):

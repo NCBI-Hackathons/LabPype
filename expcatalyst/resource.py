@@ -22,7 +22,7 @@ class Resource(UI.Resource):
             "COLOR_WIDGET_WAIT": "#ffff00",
             "COLOR_WIDGET_FAIL": "#ff0000",
             "COLOR_ANCHOR_RECV": "#ffffff",
-            "COLOR_ANCHOR_SEND": "#c0ffc0",
+            "COLOR_ANCHOR_SEND": "#80ff80",
             "COLOR_ANCHOR_PASS": "#00ff00",
             "COLOR_ANCHOR_FAIL": "#ff0000",
         }.items():

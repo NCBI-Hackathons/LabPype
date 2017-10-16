@@ -40,7 +40,7 @@ class Number(Widget):
     INTERNAL = "NUMBER"
     OUTGOING = ANCHOR_NUMBER
 
-    def Function(self):
+    def Task(self):
         return float(self["NUMBER"])
 
 class Summer(Widget):
@@ -48,12 +48,12 @@ class Summer(Widget):
     INCOMING = ANCHOR_NUMBERS, "NUMBERS", True, "L"
     OUTGOING = ANCHOR_NUMBER # The output can be the input for the next summer
 
-    def GetName(self):
+    def Name(self):
         if self.IsDone():
             return "+".join([str(i) for i in self["NUMBERS"]]) + "=" + str(self["OUT"])
         return self.NAME
 
-    def Function(self):
+    def Task(self):
         return sum(self["NUMBERS"])
 ```
 
