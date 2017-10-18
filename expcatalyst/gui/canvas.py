@@ -98,6 +98,9 @@ class Canvas(UI.BaseControl):
         if len(self.Widget) > 255:
             self.GetParent().OnDialog("MSG_TOO_MANY_WIDGETS", "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MSG_TOO_MANY_WIDGETS"])
             return
+        if isinstance(W.SINGLETON, W):
+            self.GetParent().OnDialog("MSG_SINGLETON_EXISTS", "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MSG_SINGLETON_EXISTS"])
+            return
         w = W(self)
         w.SetPosition(*pos)
         self.Widget.append(w)
@@ -325,7 +328,7 @@ class Canvas(UI.BaseControl):
             elif isinstance(newObj, Anchor):
                 self.SetStatus(newObj.GetName())
             elif isinstance(newObj, tuple):
-                self.SetStatus("%s (%s) => %s (%s)" % (newObj[0].Widget.name, newObj[0].name, newObj[1].Widget.name, newObj[1].name), 1)
+                self.SetStatus("[%s].[%s] --> [%s].[%s]" % (newObj[0].Widget.NAME, newObj[0].name, newObj[1].Widget.NAME, newObj[1].name), 1)
             else:
                 self.SetStatus("")
             return True

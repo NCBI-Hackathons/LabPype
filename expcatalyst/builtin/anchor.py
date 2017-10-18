@@ -6,6 +6,7 @@ from ..widget.anchor import Anchor
 __all__ = [
     "ANCHOR_NUMBER", "ANCHOR_NUMBERS",
     "ANCHOR_TEXT", "ANCHOR_TEXTS",
+    "ANCHOR_SSH",
     "AnchorFCFS",
 ]
 
@@ -24,20 +25,19 @@ class AnchorFCFS(Anchor):
 
 
 # ======================================================= Anchor =======================================================
-class ANCHOR_NUMBER(ANCHOR_REGULAR):
-    pass
+class ANCHOR_NUMBER(ANCHOR_REGULAR): pass
 
 
-class ANCHOR_NUMBERS(ANCHOR_REGULAR):
-    pass
+class ANCHOR_NUMBERS(ANCHOR_REGULAR): pass
 
 
-class ANCHOR_TEXT(ANCHOR_REGULAR):
-    pass
+class ANCHOR_TEXT(ANCHOR_REGULAR): pass
 
 
-class ANCHOR_TEXTS(ANCHOR_REGULAR):
-    pass
+class ANCHOR_TEXTS(ANCHOR_REGULAR): pass
+
+
+class ANCHOR_SSH(ANCHOR_REGULAR): pass
 
 
 for reverse, source, target in (
@@ -47,6 +47,7 @@ for reverse, source, target in (
 
         (0, ANCHOR_TEXT, ANCHOR_TEXT),
         (0, ANCHOR_TEXT, ANCHOR_TEXTS),
-        (0, ANCHOR_TEXTS, ANCHOR_TEXTS),
+
+        (0, ANCHOR_SSH, ANCHOR_SSH),
 ):
     LegitLink.Add(source, target, reverse)

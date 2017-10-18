@@ -12,7 +12,7 @@ from .base import Base, IdPool
 from .field import BaseField
 from . import anchor as An
 
-__all__ = ["Widget", "Interrupted"]
+__all__ = ["Widget", "Interrupted", "Synced"]
 
 WidgetEvent, EVT_WIDGET = wx.lib.newevent.NewEvent()
 
@@ -77,15 +77,14 @@ def Synced(func):
 
 
 # ================================================== How to Subclass ===================================================
-# Rules:
 #   Widget subclasses should have the following class properties:
 #       KEY       -  Class Identifier. By default KEY is id(WidgetClass). Normally user does not need to specify KEY.
 #       NAME      -  Default name of the widget, for display purpose.
-#       DIALOG    -  Associated Dialog class for interacting with the widget. Not always required.
+#       DIALOG    -  Associated Dialog class for interacting with the widget. Optional.
 #       THREAD    -  Whether the task should be done in a separate thread.
 #       INTERNAL  -  KEY for data that are input from the associated dialog.
-#       INCOMING  -  Incoming anchor definitions: (AnchorType, KEY:str, IsMultiple:bool, Position:int, Name:str("")) [, (more anchors...)]
-#       OUTGOING  -  AnchorType of the data sending out.
+#       INCOMING  -  Incoming anchor(s): (AnchorType, KEY:str, IsMultiple:bool, Position:int, Name:str(""), AnchorClass:) [, (more anchors...)]
+#       OUTGOING  -  AnchorType of the data sending out: AnchorType [, Name:str(""), AnchorClass]
 #   The following methods should be re-implemented:
 #       Name      -  How canvas display the name of this widget. Default is cls.NAME
 #       Task      -  to do
@@ -101,6 +100,7 @@ class Widget(wx.EvtHandler, Base):
     INTERNAL = None
     INCOMING = None
     OUTGOING = None
+    SINGLETON = False
 
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, "__INITIALIZED__"):
@@ -121,7 +121,7 @@ class Widget(wx.EvtHandler, Base):
             if cls.OUTGOING is None:
                 pass
             elif not isinstance(cls.OUTGOING, (tuple, list)):
-                cls.OUTGOING = (cls.OUTGOING, "", None)
+                cls.OUTGOING = (cls.OUTGOING, "Output", None)
         return super().__new__(cls)
 
     def __init__(self, canvas):
@@ -152,7 +152,10 @@ class Widget(wx.EvtHandler, Base):
             for args in self.INCOMING:
                 self.AddAnchor(False, *args)
         if self.OUTGOING:
-            self.AddAnchor(True, self.OUTGOING[0], "OUT", True, "RTB", self.OUTGOING[1], self.OUTGOING[2])
+            self.AddAnchor(True, self.OUTGOING[0], "OUT", True, "RBT", self.Canvas.L.Get(self.OUTGOING[1], "ANCHOR_NAME_"), self.OUTGOING[2])
+        if self.__class__.SINGLETON:
+            self.__class__.SINGLETON = self
+        self.Init()
 
     def __setitem__(self, key, value):
         self.Data[key] = value
@@ -169,15 +172,18 @@ class Widget(wx.EvtHandler, Base):
         self.Pos2Anchor[a.pos].append(a)
 
     def Destroy(self):
-        self.Stop()
+        self.Unbind(EVT_WIDGET)
         if self.Dialog:
             self.Dialog.OnClose()
-        self.Unbind(EVT_WIDGET)
+        self.Stop()
+        self.Exit()
         self.SetState(WIDGET_STATE_IDLE)
         for a in reversed(self.Anchors):
             a.EmptyTarget()
             IdPool.Release(a.Id)
         IdPool.Release(self.Id)
+        if isinstance(self.__class__.SINGLETON, self.__class__):
+            self.__class__.SINGLETON = True
 
     def NewPosition(self, x, y):
         if self.Canvas.S["TOGGLE_SNAP"]:
@@ -305,6 +311,7 @@ class Widget(wx.EvtHandler, Base):
         return True
 
     def InitData(self):
+        self.Reset()
         for a in self.Incoming:
             if a.connected:
                 if a.multiple:
@@ -444,13 +451,13 @@ class Widget(wx.EvtHandler, Base):
             fail = False
             wait = False
             for w in self.GetIncomingWidget():
-                if w.state == WIDGET_STATE_FAIL:
+                if w.IsFailed():
                     fail = True
-                elif w.state == WIDGET_STATE_WORK:
+                elif w.IsWorking():
                     wait = True
-                elif w.state == WIDGET_STATE_WAIT:
+                elif w.IsWaiting():
                     wait = True
-                elif w.state == WIDGET_STATE_IDLE:
+                elif w.IsIdle():
                     wait = True
             if fail:
                 self.SetState(WIDGET_STATE_FAIL)
@@ -472,13 +479,13 @@ class Widget(wx.EvtHandler, Base):
         elif evt.evtType == EVT_WIDGET_START:
             wait = False
             for w in self.GetIncomingWidget():
-                if w.state == WIDGET_STATE_WORK:
+                if w.IsWorking():
                     wait = True
-                elif w.state == WIDGET_STATE_WAIT:
+                elif w.IsWaiting():
                     wait = True
-                elif w.state == WIDGET_STATE_IDLE:
+                elif w.IsIdle():
                     wait = True
-                elif w.state == WIDGET_STATE_FAIL:
+                elif w.IsFailed():
                     wait = True
             if not wait:
                 self.Run()
@@ -531,3 +538,12 @@ class Widget(wx.EvtHandler, Base):
 
     def Load(self, f):
         return json.load(f)
+
+    def Init(self):
+        pass
+
+    def Exit(self):
+        pass
+
+    def Reset(self):
+        pass

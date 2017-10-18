@@ -6,6 +6,7 @@ from .anchor import *
 from .flowcontrol import *
 from .number import *
 from .text import *
+# from .ssh import *
 
 Number = [
     "Number",
@@ -15,12 +16,19 @@ Number = [
 
 Text = [
     "Text",
-    ("#ffaa55", Line, ),
-    ("#ffaa55", Text, ),
+    ("#ffaa55", Line,),
+    ("#ffaa55", Text,),
 ]
 
 FlowControl = [
     "Flow Control",
-    ("#d0d0d0", Passer, Here("icon", "Passer.png")),
-    ("#d0d0d0", Condition, Here("icon", "Condition.png")),
+    ("#ffffff", Passer, Here("icon", "Passer.png")),
+    ("#ffffff", Condition, Here("icon", "Condition.png")),
+    ("#ffffff", Wait,),
 ]
+
+# SSH = [
+#     "SSH",
+#     ("#99e5cf", SSHClient,),
+#     ("#99e5cf", SSHShell,),
+# ]

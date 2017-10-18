@@ -9,16 +9,15 @@ from . import widget as Wi
 __all__ = ["Anchor"]
 
 # ======================================================= Anchor =======================================================
-#   Anchors
-#       aType     -  Anchor type,for defining legit links
-#       key       -  Key for accessing (get/set) data associated with this widget
-#       multiple  -  Whether this anchor can connect to multiple targets
-#       send      -  Whether this anchor retrieve (IN) or send (OUT) associated data from/to its target
-#       pos       -  The relative position of the anchor to the widget, use a negative value for automatic positioning
-#       name      -  The tip displayed when being hovered
+#   aType     -  Anchor type, for defining legit links
+#   key       -  Key for accessing (get/set) data associated with this widget
+#   multiple  -  Whether this anchor supports multiple connections
+#   send      -  Whether this anchor retrieve (IN) or send (OUT) associated data from/to its target
+#   pos       -  The relative position of the anchor to the widget, support multiple positions
+#   name      -  Default text displayed when being hovered
 #
-#       GetType   -
-#       GetName   -
+#   GetType   -  By default return aType. Override for flexibility
+#   GetName   -  How canvas display the name of this anchor
 # ======================================================= Anchor =======================================================
 
 ANCHOR_STATE_IDLE = 1 << 0
@@ -67,7 +66,7 @@ class Anchor(Base):
         self.y = y
         self.rect.SetPosition((x - 6, y - 6))
 
-    # ----------------------------------------------
+    # ----------------------------------------------------------
     def DrawOutgoing(self, dc):
         if self.state == ANCHOR_STATE_IDLE:
             dc.anchorOutgoing.append((self.x, self.y, 6, 6))
@@ -92,7 +91,7 @@ class Anchor(Base):
         elif self.state == ANCHOR_STATE_FAIL:
             dc.anchorFailE.append((self.x, self.y, 6, 6))
 
-    # ----------------------------------------------
+    # ----------------------------------------------------------
     def HandleMouse(self, evtType, evtPos):
         if evtType == wx.wxEVT_LEFT_DOWN:
             self.Canvas.TempLink = [self, None]
@@ -132,7 +131,7 @@ class Anchor(Base):
                 self.leftPos = (self.pointing.x + 3, self.pointing.y + 3)
             self.Canvas.TempLink[1] = self.leftPos
 
-    # ----------------------------------------------
+    # ----------------------------------------------------------
     def EmptyTarget(self):
         if self.recv:
             for dest in self.connected.copy():
@@ -162,9 +161,9 @@ class Anchor(Base):
         if sendEvent:
             dest.Widget.OnSetIncoming()
 
-    # ------------------ Override ------------------
+    # ----------------------------------------------------------
     def GetType(self):
         return self.aType
 
     def GetName(self):
-        return ("In: " if self.recv else "Out: ") + self.name
+        return ("--> %s <--" if self.recv else "<-- %s -->") % self.name

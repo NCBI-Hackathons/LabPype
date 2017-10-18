@@ -44,6 +44,7 @@ Locale.DEFAULT = {
     "TOOL_MANAGE"         : "Manage Widgets",
 
     "MSG_TOO_MANY_WIDGETS": "Too many widgets!",
+    "MSG_SINGLETON_EXISTS": "This widget can only have one instance!",
     "MSG_CIRCULAR_LINKAGE": "Circular reference is not allowed!",
 
     "GENERAL_HEAD_FAIL"   : "Error",

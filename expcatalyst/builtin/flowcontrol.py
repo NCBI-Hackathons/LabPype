@@ -7,6 +7,7 @@ from .anchor import *
 __all__ = [
     "Passer",
     "Condition",
+    "Wait",
 ]
 
 
@@ -16,7 +17,7 @@ class Passer(Widget):
     DIALOG = None
     THREAD = False
     INTERNAL = None
-    INCOMING = ANCHOR_ALL, "DATA", False, "L", "", AnchorFCFS
+    INCOMING = ANCHOR_ALL, "DATA", False, "L", "Data to Pass", AnchorFCFS
     OUTGOING = ANCHOR_ALL, "", AnchorFCFS
 
     def Task(self):
@@ -29,13 +30,34 @@ class Condition(Widget):
     THREAD = False
     INTERNAL = None
     INCOMING = (ANCHOR_ALL, "TEST", False, "L", "Condition to test"), \
-               (ANCHOR_ALL, "VALUE_T", False, "T", "Value passed if condition true ", AnchorFCFS), \
-               (ANCHOR_ALL, "VALUE_F", False, "B", "Value passed if condition false", AnchorFCFS)
+               (ANCHOR_ALL, "VALUE_T", False, "T", "Data passed if condition true ", AnchorFCFS), \
+               (ANCHOR_ALL, "VALUE_F", False, "B", "Data passed if condition false", AnchorFCFS)
     OUTGOING = ANCHOR_ALL, "", AnchorFCFS
 
     def Name(self):
         if self["TEST"] is not None:
-            return "T: Sending Top" if bool(self["TEST"]) else "F: Sending Bottom"
+            return "Passing Top" if bool(self["TEST"]) else "Passing Bottom"
 
     def Task(self):
         return self["VALUE_T"] if bool(self["TEST"]) else self["VALUE_F"]
+
+
+class Wait(Widget):
+    NAME = "Wait"
+    DIALOG = None
+    THREAD = False
+    INTERNAL = None
+    INCOMING = (ANCHOR_ALL, "DATA", False, "L", "Data to Pass", AnchorFCFS), \
+               (ANCHOR_ALL, "WAIT", True, "TB", "Tasks to wait")
+    OUTGOING = ANCHOR_ALL, "", AnchorFCFS
+
+    def Name(self):
+        if self.IsWaiting():
+            return "Waiting"
+        if self.IsDone():
+            return "Pass"
+        if self.IsFailed():
+            return "Failed"
+
+    def Task(self):
+        return self["DATA"]

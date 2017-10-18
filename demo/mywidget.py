@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
 
 
+import os
 import threading
+import subprocess
+from time import sleep
+
 from expcatalyst.widget import Widget, Interrupted
 from expcatalyst.builtin import ANCHOR_NUMBER, ANCHOR_NUMBERS
 
 import mydialog as Di
 
-from time import sleep
+MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
+Here = lambda f="": os.path.join(MAIN_PATH, f)
 
 
 class Summer(Widget):
@@ -54,3 +59,20 @@ class Multiplier(Widget):
                 raise Interrupted
             p *= i
         return p
+
+
+class SubprocessExample(Widget):
+    NAME = "Subprocess Example"
+    DIALOG = {"ORIENTATION": "V", "SIZE": (120, -1)}
+    THREAD = True
+    OUTGOING = ANCHOR_NUMBER
+
+    def Task(self):
+        t = threading.currentThread()
+        p = subprocess.Popen(["python", Here("dummyprocess.py")], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        while p.poll() is None:
+            sleep(1)
+            if t.Stopped():
+                p.kill()
+                raise Interrupted
+        return int(p.stdout.read())

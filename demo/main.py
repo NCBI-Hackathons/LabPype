@@ -4,16 +4,17 @@
 import os
 import wx
 import expcatalyst
-from expcatalyst.builtin import FlowControl, Number
+from expcatalyst.builtin import FlowControl, Number, Text
 import mywidget as Wi
 
 MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
 Here = lambda f="": os.path.join(MAIN_PATH, f)
 
-WIDGET_LIST = FlowControl + Number + \
-              ["Math",
+WIDGET_LIST = FlowControl + Number + Text  + \
+              ["",
                ("#80ccff", Wi.Summer,),
                ("#ff9fff", Wi.Multiplier,),
+               ("#ffffc0", Wi.SubprocessExample,),
                ]
 
 App = wx.App(redirect=0, useBestVisual=True)
