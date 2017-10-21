@@ -75,4 +75,5 @@ class SubprocessExample(Widget):
             if t.Stopped():
                 p.kill()
                 raise Interrupted
-        return int(p.stdout.read())
+        if p.returncode == 0:
+            return int(p.stdout.read())

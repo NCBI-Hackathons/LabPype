@@ -177,6 +177,7 @@ class Widget(wx.EvtHandler, Base):
             self.Dialog.OnClose()
         self.Stop()
         self.Exit()
+        self.Data = None
         self.SetState(WIDGET_STATE_IDLE)
         for a in reversed(self.Anchors):
             a.EmptyTarget()
