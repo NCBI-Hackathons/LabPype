@@ -94,7 +94,7 @@ class Anchor(Base):
     # ----------------------------------------------------------
     def HandleMouse(self, evtType, evtPos):
         if evtType == wx.wxEVT_LEFT_DOWN:
-            self.Canvas.TempLink = [self, None]
+            self.Canvas.TempLink = [(self.x + 3, self.y + 3), None, None, self.send]
         elif evtType == wx.wxEVT_LEFT_UP:
             self.Canvas.TempLink = None
             self.SetState(ANCHOR_STATE_IDLE)
@@ -130,31 +130,35 @@ class Anchor(Base):
                 self.pointing.SetState(state)
                 self.leftPos = (self.pointing.x + 3, self.pointing.y + 3)
             self.Canvas.TempLink[1] = self.leftPos
+            self.Canvas.TempLink[2] = (self.leftPos[0] - 0.5, self.leftPos[1] - 0.5)
 
     # ----------------------------------------------------------
-    def EmptyTarget(self):
+    def EmptyTarget(self, sendEvent):
         if self.recv:
             for dest in self.connected.copy():
-                dest.RemoveTarget(self)
+                dest.RemoveTarget(self, False)
+            if sendEvent:
+                self.Widget.OnSetIncoming()
         else:
             for dest in self.connected.copy():
-                self.RemoveTarget(dest)
+                self.RemoveTarget(dest, sendEvent)
 
-    def RemoveTarget(self, dest):  # self always send, dest always recv
+    def RemoveTarget(self, dest, sendEvent):  # self always send, dest always recv
         self.connected.remove(dest)
         dest.connected.remove(self)
         self.Canvas.RemoveLink(self, dest)
-        dest.Widget.OnSetIncoming()
+        if sendEvent:
+            dest.Widget.OnSetIncoming()
 
     def SetTarget(self, dest, sendEvent=True):  # self always send, dest always recv
         if DetectCircularReference(dest.Widget, self.Widget):  # Check the opposite send
             return self.Canvas.GetParent().SetStatus(self.Canvas.L["MSG_CIRCULAR_LINKAGE"], 1, 5)
         if dest in self.connected:
-            return self.RemoveTarget(dest)
+            return self.RemoveTarget(dest, True)
         if dest.single and dest.connected:
-            dest.EmptyTarget()
+            dest.EmptyTarget(False)
         if self.single and self.connected:
-            self.EmptyTarget()
+            self.EmptyTarget(True)
         self.connected.append(dest)
         dest.connected.append(self)
         self.Canvas.AppendLink(self, dest)

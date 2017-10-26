@@ -20,6 +20,7 @@ class Canvas(UI.BaseControl):
         self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouse)
         self.NewAnimation("LOCATE", 50, self.ToggleSelect, (), False)  # TODO
         self.NewTimer("__", self.ReDraw)
+        self.NewTimer("___", self.ReDrawHidden)
         self.SetStatus = parent.SetStatus
         if self.S["TOGGLE_CURV"]:
             self.DrawLink1 = DrawCurve
@@ -123,7 +124,7 @@ class Canvas(UI.BaseControl):
         self.Hovered = None
         self.Clicked = None
         if self.SelectedLink:
-            self.SelectedLink[0].RemoveTarget(self.SelectedLink[1])
+            self.SelectedLink[0].RemoveTarget(self.SelectedLink[1], True)
             self.SelectedLink = None
         else:
             while self.SelectedWidget:
@@ -356,24 +357,18 @@ class Canvas(UI.BaseControl):
         dc.anchorIdleE = []
         dc.anchorPassE = []
         dc.anchorFailE = []
-        mdc = wx.MemoryDC()
-        mdc.SelectObject(self.hiddenBitmap)
-        mdc.SetBackground(wx.BLACK_BRUSH)
-        mdc.Clear()
-        mgc = wx.GraphicsContext.Create(mdc)
-        mgc.SetAntialiasMode(wx.ANTIALIAS_NONE)
 
         # Layer 1 - SelectedWidget
         dc.SetPen(self.R["PEN_SELECTION"])
         dc.SetBrush(self.R["BRUSH_SELECTION"])
         dc.DrawRectangle(self.SelectionRect)
-        dc.DrawRectangleList([w.rectSelect for w in self.SelectedWidget])
+        dc.DrawRectangleList([w.rect for w in self.SelectedWidget])
         if self.SelectedLink:
             self.DrawLink(gc, self.SelectedLink)
 
         # Layer 2 - Hover
         if isinstance(self.Hovered, Widget):
-            dc.DrawRectangle(self.Hovered.rectSelect)
+            dc.DrawRectangle(self.Hovered.rect)
         elif isinstance(self.Hovered, Anchor):
             dc.DrawRectangle(self.Hovered.rect)
         elif isinstance(self.Hovered, tuple) and self.Hovered != self.SelectedLink:
@@ -393,20 +388,19 @@ class Canvas(UI.BaseControl):
             c1 = max(c, x1 + 32)
             c2 = min(c, x2 - 32)
             self.DrawLink1(path, x1, y1, x2, y2, c1, c2)
-            self.DrawLink2(mgc, x1, y1, x2, y2, c1, c2, link[2])
         if self.TempLink and self.TempLink[1]:
-            if self.TempLink[0].send:
-                x1, y1 = self.TempLink[0].x + 3, self.TempLink[0].y + 3
+            if self.TempLink[3]:
+                x1, y1 = self.TempLink[0]
                 x2, y2 = self.TempLink[1]
             else:
-                x2, y2 = self.TempLink[0].x + 3, self.TempLink[0].y + 3
+                x2, y2 = self.TempLink[0]
                 x1, y1 = self.TempLink[1]
             c = (x1 + x2) / 2
             c1 = max(c, x1 + 32)
             c2 = min(c, x2 - 32)
             self.DrawLink1(path, x1, y1, x2, y2, c1, c2)
-            path.AddCircle(self.TempLink[1][0] - 0.5, self.TempLink[1][1] - 0.5, 1)
-            path.AddCircle(self.TempLink[1][0] - 0.5, self.TempLink[1][1] - 0.5, 6)
+            path.AddCircle(*self.TempLink[2], 1)
+            path.AddCircle(*self.TempLink[2], 6)
         gc.SetPen(self.R["PEN_CONNECTION"])
         gc.StrokePath(path)
 
@@ -430,12 +424,29 @@ class Canvas(UI.BaseControl):
         dc.DrawLines(self.borderPoints)
 
         # Finish
-        mdc.SelectObject(wx.NullBitmap)
-        self.hiddenImage = self.hiddenBitmap.ConvertToImage()
         self.timeLastDraw = time.time()
         if self.timeLastDraw > self.timeLastBlink + 0.2:
             self.timeLastBlink = self.timeLastDraw
             self.colorLastBlink = not self.colorLastBlink
+
+        self.StartTimer("___", 100, wx.TIMER_ONE_SHOT)
+
+    def ReDrawHidden(self):
+        mdc = wx.MemoryDC()
+        mdc.SelectObject(self.hiddenBitmap)
+        mdc.SetBackground(wx.BLACK_BRUSH)
+        mdc.Clear()
+        mgc = wx.GraphicsContext.Create(mdc)
+        mgc.SetAntialiasMode(wx.ANTIALIAS_NONE)
+        for link in self.Link.values():
+            x1, y1 = link[0].x + 3, link[0].y + 3
+            x2, y2 = link[1].x + 3, link[1].y + 3
+            c = (x1 + x2) / 2
+            c1 = max(c, x1 + 32)
+            c2 = min(c, x2 - 32)
+            self.DrawLink2(mgc, x1, y1, x2, y2, c1, c2, link[2])
+        mdc.SelectObject(wx.NullBitmap)
+        self.hiddenImage = self.hiddenBitmap.ConvertToImage()
 
 
 # ----------------------------------------------

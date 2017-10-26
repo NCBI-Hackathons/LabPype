@@ -108,7 +108,7 @@ class Gadget(UI.Scrolled):
             for group in self.Groups:
                 show = showGroup = text in group.lower()
                 for item in self.Groups[group]["ITEMS"]:
-                    showItem = text in item.WIDGET.NAME.lower()
+                    showItem = text in item.Item.NAME.lower()
                     show |= showItem
                     item.Show(showItem or showGroup)
                 self.DoToggleGroup(group, show)

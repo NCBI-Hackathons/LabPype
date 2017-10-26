@@ -17,7 +17,7 @@ __all__ = ["Widget", "Interrupted", "Synced"]
 WidgetEvent, EVT_WIDGET = wx.lib.newevent.NewEvent()
 
 EVT_WIDGET_START = 1
-EVT_WIDGET_CHANGE = 2
+EVT_WIDGET_ALTER = 2
 EVT_WIDGET_DONE = 3
 EVT_WIDGET_FAIL = 4
 
@@ -130,7 +130,7 @@ class Widget(wx.EvtHandler, Base):
         self.Canvas = canvas
         self.name = self.NAME
         self.namePos = (0, 0)
-        self.rectSelect = wx.Rect(0, 0, 68, 68)
+        self.rect.SetSize((68, 68))
         self.state = WIDGET_STATE_IDLE
         self.stateHandler = self.HandlerIdle
         self.Bind(EVT_WIDGET, lambda evt: self.stateHandler(evt))
@@ -177,14 +177,14 @@ class Widget(wx.EvtHandler, Base):
             self.Dialog.OnClose()
         self.Stop()
         self.Exit()
-        self.Data = None
         self.SetState(WIDGET_STATE_IDLE)
         for a in reversed(self.Anchors):
-            a.EmptyTarget()
+            a.EmptyTarget(a.send)
             IdPool.Release(a.Id)
         IdPool.Release(self.Id)
         if isinstance(self.__class__.SINGLETON, self.__class__):
             self.__class__.SINGLETON = True
+        self.Data = None
 
     def NewPosition(self, x, y):
         if self.Canvas.S["TOGGLE_SNAP"]:
@@ -192,10 +192,9 @@ class Widget(wx.EvtHandler, Base):
             y = y >> 5 << 5
         self.x = x
         self.y = y
-        self.rect.SetPosition((x, y))
-        self.rectSelect.SetPosition((x - 6, y - 6))
-        self.PositionName()
+        self.rect.SetPosition((x - 6, y - 6))
         self.PositionAnchor()
+        self.PositionName()
 
     def PositionAnchor(self):
         for a in self.Anchors:
@@ -204,13 +203,13 @@ class Widget(wx.EvtHandler, Base):
                 x = sum(i.x for i in a.connected) / len(a.connected) - self.x - 25
                 y = sum(i.y for i in a.connected) / len(a.connected) - self.y - 25
                 theta = math.atan2(y, x) * 4
-                if -3.0 * math.pi <= theta < -math.pi and "T" in a.posAllowed:
+                if "T" in a.posAllowed and -3.0 * math.pi <= theta < -math.pi:
                     a.pos = "T"
-                elif -math.pi <= theta < math.pi and "R" in a.posAllowed:
+                elif "R" in a.posAllowed and -math.pi <= theta < math.pi:
                     a.pos = "R"
-                elif math.pi <= theta < 3 * math.pi and "B" in a.posAllowed:
+                elif "B" in a.posAllowed and math.pi <= theta < 3 * math.pi :
                     a.pos = "B"
-                elif "L" in a.posAllowed:
+                elif "L" in a.posAllowed and (3 * math.pi <= theta or theta < -3.0 * math.pi):
                     a.pos = "L"
                 self.Pos2Anchor[a.pos].append(a)
         for p in "LRTB":
@@ -337,10 +336,10 @@ class Widget(wx.EvtHandler, Base):
             self.Dialog = MakeWidgetDialog(self)
 
     def OnSetIncoming(self):
-        wx.PostEvent(self, WidgetEvent(evtType=EVT_WIDGET_CHANGE))
+        wx.PostEvent(self, WidgetEvent(evtType=EVT_WIDGET_ALTER))
 
     def OnSetInternal(self):
-        wx.PostEvent(self, WidgetEvent(evtType=EVT_WIDGET_CHANGE))
+        wx.PostEvent(self, WidgetEvent(evtType=EVT_WIDGET_ALTER))
 
     def OnStart(self):
         wx.PostEvent(self, WidgetEvent(evtType=EVT_WIDGET_START))
@@ -439,11 +438,11 @@ class Widget(wx.EvtHandler, Base):
         self.stateHandler = getattr(self, STATE_HANDLER[state])
 
     def HandlerIdle(self, evt):
-        if evt.evtType == EVT_WIDGET_CHANGE:
+        if evt.evtType == EVT_WIDGET_ALTER:
             self.InitData()
             if self.Dialog:
                 wx.CallAfter(self.Dialog.GetData)
-            self.PostToOutgoingWidget(EVT_WIDGET_CHANGE, WIDGET_STATE_IDLE)
+            self.PostToOutgoingWidget(EVT_WIDGET_ALTER, WIDGET_STATE_IDLE)
         elif evt.evtType == EVT_WIDGET_START:
             if not self.IsIncomingAvailable() or not self.IsInternalAvailable():
                 self.SetState(WIDGET_STATE_FAIL)
@@ -470,10 +469,10 @@ class Widget(wx.EvtHandler, Base):
                 self.Run()
 
     def HandlerWait(self, evt):
-        if evt.evtType == EVT_WIDGET_CHANGE:
+        if evt.evtType == EVT_WIDGET_ALTER:
             self.SetState(WIDGET_STATE_IDLE)
             self.InitData()
-            self.PostToOutgoingWidget(EVT_WIDGET_CHANGE, WIDGET_STATE_WAIT | WIDGET_STATE_FAIL | WIDGET_STATE_IDLE)
+            self.PostToOutgoingWidget(EVT_WIDGET_ALTER, WIDGET_STATE_WAIT | WIDGET_STATE_FAIL | WIDGET_STATE_IDLE)
         elif evt.evtType == EVT_WIDGET_FAIL:
             self.SetState(WIDGET_STATE_FAIL)
             self.PostToOutgoingWidget(EVT_WIDGET_FAIL, WIDGET_STATE_WAIT)
@@ -492,10 +491,10 @@ class Widget(wx.EvtHandler, Base):
                 self.Run()
 
     def HandlerWork(self, evt):
-        if evt.evtType == EVT_WIDGET_CHANGE:
+        if evt.evtType == EVT_WIDGET_ALTER:
             self.SetState(WIDGET_STATE_IDLE)
             self.InitData()
-            self.PostToOutgoingWidget(EVT_WIDGET_CHANGE, WIDGET_STATE_WAIT | WIDGET_STATE_FAIL)
+            self.PostToOutgoingWidget(EVT_WIDGET_ALTER, WIDGET_STATE_WAIT | WIDGET_STATE_FAIL)
             self.Stop()
         elif evt.evtType == EVT_WIDGET_DONE:
             self.SetState(WIDGET_STATE_DONE)
@@ -509,22 +508,22 @@ class Widget(wx.EvtHandler, Base):
             wx.CallAfter(self.Dialog.GetData)
 
     def HandlerFail(self, evt):
-        if evt.evtType == EVT_WIDGET_CHANGE:
+        if evt.evtType == EVT_WIDGET_ALTER:
             self.SetState(WIDGET_STATE_IDLE)
             self.InitData()
             if self.Dialog:
                 wx.CallAfter(self.Dialog.GetData)
-            self.PostToOutgoingWidget(EVT_WIDGET_CHANGE, WIDGET_STATE_FAIL | WIDGET_STATE_IDLE)
+            self.PostToOutgoingWidget(EVT_WIDGET_ALTER, WIDGET_STATE_FAIL | WIDGET_STATE_IDLE)
 
     def HandlerDone(self, evt):
-        if evt.evtType == EVT_WIDGET_CHANGE:
+        if evt.evtType == EVT_WIDGET_ALTER:
             self.SetState(WIDGET_STATE_IDLE)
             self.InitData()
             if self.Dialog:
                 wx.CallAfter(self.Dialog.GetData)
-            self.PostToOutgoingWidget(EVT_WIDGET_CHANGE, WIDGET_STATE)
+            self.PostToOutgoingWidget(EVT_WIDGET_ALTER, WIDGET_STATE)
         elif evt.evtType == EVT_WIDGET_START:
-            self.PostToOutgoingWidget(EVT_WIDGET_CHANGE)
+            self.PostToOutgoingWidget(EVT_WIDGET_ALTER)
             self.Run()
 
     # ----------------------------------------------------------
