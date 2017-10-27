@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 
 
-from DynaUI import Singleton
-
-__all__ = ["LegitLink", "ANCHOR_REGULAR", "ANCHOR_SPECIAL", "ANCHOR_ALL", "ANCHOR_NONE"]
+__all__ = [
+    "LegitLink",
+    "ANCHOR_REGULAR",
+    "ANCHOR_SPECIAL",
+    "ANCHOR_ALL",
+    "ANCHOR_NONE"
+]
 
 
 # =============================================== AnchorType & LegitLink ===============================================
@@ -23,8 +27,11 @@ class ANCHOR_NONE(ANCHOR_SPECIAL):
     pass
 
 
-class _LegitLink(object, metaclass=Singleton):
+class _LegitLink(object):
+    _SharedState = {}
+
     def __init__(self):
+        self.__dict__ = self._SharedState
         self.links = {}
 
     def __call__(self, a1, a2):

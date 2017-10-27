@@ -207,7 +207,7 @@ class Widget(wx.EvtHandler, Base):
                     a.pos = "T"
                 elif "R" in a.posAllowed and -math.pi <= theta < math.pi:
                     a.pos = "R"
-                elif "B" in a.posAllowed and math.pi <= theta < 3 * math.pi :
+                elif "B" in a.posAllowed and math.pi <= theta < 3 * math.pi:
                     a.pos = "B"
                 elif "L" in a.posAllowed and (3 * math.pi <= theta or theta < -3.0 * math.pi):
                     a.pos = "L"
@@ -334,6 +334,14 @@ class Widget(wx.EvtHandler, Base):
             self.Dialog.SetFocus()
         elif self.DIALOG:
             self.Dialog = MakeWidgetDialog(self)
+            if self.THREAD and self.Dialog:
+                if self.IsRunning():
+                    self.Dialog[3].Hide()
+                    self.Dialog[4].Show()
+                else:
+                    self.Dialog[4].Hide()
+                    self.Dialog[3].Show()
+                self.Dialog.Layout()
 
     def OnSetIncoming(self):
         wx.PostEvent(self, WidgetEvent(evtType=EVT_WIDGET_ALTER))

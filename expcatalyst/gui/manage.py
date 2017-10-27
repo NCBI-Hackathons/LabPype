@@ -363,7 +363,7 @@ class WidgetItem(UI.Button):
 # ======================================================= Manage =======================================================
 class Manage(UI.BaseDialog):
     def __init__(self, parent):
-        super().__init__(parent=parent, title=parent.L["MANAGE_TITLE"], size=wx.Size(500, 480), style=wx.STAY_ON_TOP, main=Main)
+        super().__init__(parent=parent, title=parent.L["MANAGE_TITLE"], size=wx.Size(500, 480), main=Main)
         self.Head.GetSizer().Insert(0, UI.ToolNormal(self.Head, size=SIZE_18BY18, pics=self.R["AP_HELP"], edge=None, func=(parent.OnDialog, "MANAGE_HELP", "SIMPLE_TEXT", self.L["MANAGE_HELP_HEAD"], self.L["MANAGE_HELP_TEXT"])),
                                     SizerFlagsHead)
         self.Head.SetTagOffset(24, 0)

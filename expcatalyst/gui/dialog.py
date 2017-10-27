@@ -8,7 +8,7 @@ import DynaUI as UI
 
 # ======================================================= Maker ========================================================
 def ShowSimpleText(parent, title, text):
-    Dialog = UI.BaseDialog(parent, title=title, style=wx.STAY_ON_TOP, head={"buttons": False})
+    Dialog = UI.BaseDialog(parent, title=title, head={"buttons": False})
     sizer = wx.BoxSizer(wx.VERTICAL)
     sizer.Add(wx.StaticText(Dialog.Main, label=text), 1, wx.EXPAND | wx.ALL, 8)
     Dialog.Main.SetSizer(sizer)
@@ -20,7 +20,7 @@ def ShowSimpleText(parent, title, text):
 
 
 def MakeDialog(parent, title, main, head=None):
-    Dialog = UI.BaseDialog(parent=parent, title=title, style=wx.STAY_ON_TOP, main=main, head=head or {})
+    Dialog = UI.BaseDialog(parent=parent, title=title, main=main, head=head or {})
     Dialog.SetSize(Dialog.GetEffectiveMinSize())
     Dialog.CenterOnParent()
     Dialog.Play("FADEIN")

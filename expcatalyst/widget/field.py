@@ -8,31 +8,29 @@ __all__ = [
     "TextField",
     "IntegerField",
     "FloatField",
+    "ChoiceField",
     "FileField",
-    # "FilePathField",
     # "EmailField",
     # "URLField",
     # "ListField",
-    "ChoiceField",
 ]
 
 
 # ----------------------------------------------
 class BaseField(object):
-    def __init__(self, key, label, *args, **kwargs):
+    def __init__(self, key, label, **kwargs):
         self.key = key
         self.label = label
-        self.args = args
         self.kwargs = kwargs
 
     def Validate(self, value):
-        pass
+        raise NotImplementedError
 
 
 # ----------------------------------------------
 class BooleanField(BaseField):
-    def __init__(self, key, label, tag1, tag2, *args, **kwargs):
-        super().__init__(key=key, label=label, *args, **kwargs)
+    def __init__(self, key, label, tag1, tag2, **kwargs):
+        super().__init__(key=key, label=label, **kwargs)
         self.tag1 = tag1
         self.tag2 = tag2
 
@@ -42,9 +40,8 @@ class BooleanField(BaseField):
 
 # ----------------------------------------------
 class LineField(BaseField):
-    def __init__(self, key, label, maxLength=None, minLength=None, hint="", *args, **kwargs):
-        super().__init__(key=key, label=label, *args, **kwargs)
-        self.hint = hint
+    def __init__(self, key, label, maxLength=None, minLength=None, **kwargs):
+        super().__init__(key=key, label=label, **kwargs)
         self.maxLength = maxLength
         self.minLength = minLength
 
@@ -59,8 +56,8 @@ class LineField(BaseField):
 
 # ----------------------------------------------
 class TextField(BaseField):
-    def __init__(self, key, label, maxLine=None, minLine=None, maxLength=None, minLength=None, *args, **kwargs):
-        super().__init__(key=key, label=label, *args, **kwargs)
+    def __init__(self, key, label, maxLine=None, minLine=None, maxLength=None, minLength=None, **kwargs):
+        super().__init__(key=key, label=label, **kwargs)
         self.maxLine = maxLine
         self.minLine = minLine
         self.maxLength = maxLength
@@ -82,8 +79,8 @@ class TextField(BaseField):
 
 # ----------------------------------------------
 class IntegerField(BaseField):
-    def __init__(self, key, label, maxValue=None, minValue=None, *args, **kwargs):
-        super().__init__(key=key, label=label, *args, **kwargs)
+    def __init__(self, key, label, maxValue=None, minValue=None, **kwargs):
+        super().__init__(key=key, label=label, **kwargs)
         self.maxValue = maxValue
         self.minValue = minValue
 
@@ -103,8 +100,8 @@ class IntegerField(BaseField):
 
 # ----------------------------------------------
 class FloatField(BaseField):
-    def __init__(self, key, label, maxValue=None, minValue=None, *args, **kwargs):
-        super().__init__(key=key, label=label, *args, **kwargs)
+    def __init__(self, key, label, maxValue=None, minValue=None, **kwargs):
+        super().__init__(key=key, label=label, **kwargs)
         self.maxValue = maxValue
         self.minValue = minValue
 
@@ -122,10 +119,10 @@ class FloatField(BaseField):
 
 # ----------------------------------------------
 class ChoiceField(BaseField):
-    def __init__(self, key, label, choices=(), useListBox=False, *args, **kwargs):
-        super().__init__(key=key, label=label, *args, **kwargs)
+    def __init__(self, key, label, choices=(), widget="C", **kwargs):
+        super().__init__(key=key, label=label, **kwargs)
         self.choices = choices
-        self.useListBox = useListBox
+        self.widget = widget
 
     def Validate(self, value):
         if value < 0:
@@ -137,18 +134,11 @@ class ChoiceField(BaseField):
 
 # ----------------------------------------------
 class FileField(BaseField):
-    def __init__(self, key, label, *args, **kwargs):
-        super().__init__(key=key, label=label, *args, **kwargs)
+    def __init__(self, key, label, **kwargs):
+        super().__init__(key=key, label=label, **kwargs)
 
     def Validate(self, value):
         return value
-
-# ----------------------------------------------
-# class FilePathField(BaseField):
-#     def __init__(self, key, label, exist=None):
-#         super().__init__(key=key, label=label)
-#         self.exist = exist
-
 
 # ----------------------------------------------
 # class EmailField(BaseField):

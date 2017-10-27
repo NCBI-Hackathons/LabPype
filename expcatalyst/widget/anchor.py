@@ -93,7 +93,7 @@ class Anchor(Base):
 
     # ----------------------------------------------------------
     def HandleMouse(self, evtType, evtPos):
-        if evtType == wx.wxEVT_LEFT_DOWN:
+        if evtType in (wx.wxEVT_LEFT_DOWN, wx.wxEVT_LEFT_DCLICK):
             self.Canvas.TempLink = [(self.x + 3, self.y + 3), None, None, self.send]
         elif evtType == wx.wxEVT_LEFT_UP:
             self.Canvas.TempLink = None

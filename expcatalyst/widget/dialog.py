@@ -94,7 +94,7 @@ class AttachedHead(UI.Button):
 def MakeWidgetDialog(widget):
     Frame = UI.BaseDialog(parent=widget.Canvas.GetParent(),
                           title=widget.NAME,
-                          style=wx.STAY_ON_TOP,
+                          style=wx.FRAME_FLOAT_ON_PARENT,
                           main=(widget.DIALOG, {"widget": widget}),
                           head=DetachedHead)
     Frame.SetSize(widget.dialogSize or Frame.GetEffectiveMinSize())
@@ -140,28 +140,50 @@ class Dialog(UI.BaseMain):
                     continue
                 key = f.key
                 label = self.L.Get(f.label, "WIDGET_DLG_")
+                if "hint" in f.kwargs:
+                    f.kwargs["hint"] = self.L.Get(f.kwargs["hint"], "WIDGET_DLG_")
                 if isinstance(f, BooleanField):
                     tags = self.L.Get(f.tag1, "WIDGET_DLG_"), self.L.Get(f.tag2, "WIDGET_DLG_")
-                    self.Auto[key] = self.AddButtonToggle(sizer=Sizer, label=label, tags=tags, toggle=self.GetDefaultData(key, 0), *f.args, **f.kwargs).IsToggled
+                    self.Auto[key] = self.AddButtonToggle(Sizer, label=label, tags=tags, toggle=self.GetDefaultData(key, 0), **f.kwargs).IsToggled
                 elif isinstance(f, IntegerField):
-                    self.Auto[key] = self.AddLineCtrl(sizer=Sizer, label=label, value=str(self.GetDefaultData(key, "")), *f.args, **f.kwargs).GetValue
+                    self.Auto[key] = self.AddLineCtrl(Sizer, label=label, value=str(self.GetDefaultData(key, "")), **f.kwargs).GetValue
                 elif isinstance(f, FloatField):
-                    self.Auto[key] = self.AddLineCtrl(sizer=Sizer, label=label, value=str(self.GetDefaultData(key, "")), *f.args, **f.kwargs).GetValue
+                    self.Auto[key] = self.AddLineCtrl(Sizer, label=label, value=str(self.GetDefaultData(key, "")), **f.kwargs).GetValue
                 elif isinstance(f, LineField):
-                    self.Auto[key] = self.AddLineCtrl(sizer=Sizer, label=label, value=self.GetDefaultData(key, ""), hint=self.L.Get(f.hint, "WIDGET_DLG_"), *f.args, **f.kwargs).GetValue
+                    self.Auto[key] = self.AddLineCtrl(Sizer, label=label, value=self.GetDefaultData(key, ""), **f.kwargs).GetValue
                 elif isinstance(f, TextField):
-                    self.Auto[key] = self.AddTextCtrl(sizer=Sizer, label=label, value=self.GetDefaultData(key, ""), *f.args, **f.kwargs).GetValue
+                    self.Auto[key] = self.AddTextCtrl(Sizer, label=label, value=self.GetDefaultData(key, ""), **f.kwargs).GetValue
                 elif isinstance(f, ChoiceField):
                     choices = tuple(self.L.Get(i, "WIDGET_DLG_") if isinstance(i, str) else str(i) for i in f.choices)
                     selected = -1 if self.Widget[key] is None else f.choices.index(self.Widget[key])
-                    if f.useListBox:
-                        self.Auto[key] = self.AddListBox(sizer=Sizer, label=label, choices=choices, selected=selected, *f.args, **f.kwargs).GetSelection
+                    if f.widget == "L":
+                        self.Auto[key] = self.AddListBox(Sizer, label=label, choices=choices, selected=selected, **f.kwargs).GetSelection
+                    elif f.widget == "B":
+                        self.Auto[key] = self.AddButtonBundle(Sizer, label=label, tags=choices, toggled=selected, group="_" + key, **f.kwargs).GetToggled
                     else:
-                        self.Auto[key] = self.AddButtonBundle(sizer=Sizer, label=label, tags=choices, toggled=selected, group="_" + key, *f.args, **f.kwargs).GetToggled
+                        self.Auto[key] = self.AddPickerValue(Sizer, label=label, choices=choices, selected=selected, **f.kwargs).GetSelection
                 elif isinstance(f, FileField):
-                    self.Auto[key] = self.AddFilePicker(sizer=Sizer, label=label, value=self.GetDefaultData(key, ""), *f.args, **f.kwargs).GetValue
+                    self.Auto[key] = self.AddFilePicker(Sizer, label=label, value=self.GetDefaultData(key, ""), **f.kwargs).GetValue
         self.Finalize(Sizer)
         self.SetSizer(Sizer)
+
+    # --------------------------------------
+    def AutoSetData(self):
+        ok = True
+        for field in self.Widget.INTERNAL:
+            if isinstance(field, BaseField):
+                v = field.Validate(UI.Do(self.Auto[field.key]))
+                if v is None:
+                    ok = False
+                    self.Widget[field.key] = None
+                else:
+                    self.Widget[field.key] = v
+        return ok
+
+    def GetDefaultData(self, key, null):
+        if self.Widget[key] is not None:
+            return self.Widget[key]
+        return null
 
     # --------------------------------------
     def EnableCanvas(self):
@@ -271,35 +293,11 @@ class Dialog(UI.BaseMain):
         self.Widget.OnSetInternal()
 
     # --------------------------------------
-    def AutoSetData(self):
-        ok = True
-        for field in self.Widget.INTERNAL:
-            if isinstance(field, BaseField):
-                v = field.Validate(UI.Do(self.Auto[field.key]))
-                if v is None:
-                    ok = False
-                    self.Widget[field.key] = None
-                else:
-                    self.Widget[field.key] = v
-        return ok
-
-    def GetDefaultData(self, key, null):
-        if self.Widget[key] is not None:
-            return self.Widget[key]
-        return null
-
-    # --------------------------------------
     def AddStdButton(self, sizer):
         self[0] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_CROSS"], edge="D", func=self.OnClose)
         if self.Widget.THREAD:
             self[3] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_BEGIN"], edge="D", func=self.OnBegin)
             self[4] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_PAUSE"], edge="D", func=self.OnAbort)
-            if self.Widget.IsRunning():
-                self[3].Hide()
-                self[4].Show()
-            else:
-                self[4].Hide()
-                self[3].Show()
         else:
             self[1] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_CHECK"], edge="D", func=self.OnReady)
         if self.Widget.INTERNAL or self.Widget.INCOMING:

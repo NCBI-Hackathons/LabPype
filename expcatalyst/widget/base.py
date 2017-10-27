@@ -2,17 +2,17 @@
 
 
 import wx
-from DynaUI import Singleton
 
 __all__ = []
 
 
 # ======================================================= IdPool =======================================================
-class IdPool(object, metaclass=Singleton):
-    SIZE = 4096
+class _IdPool(object):
+    _SharedState = {}
 
     def __init__(self):
-        self.Id = list(range(self.SIZE))
+        self.__dict__ = self._SharedState
+        self.Id = list(range(4096))
 
     def Acquire(self):
         if len(self.Id):
@@ -24,7 +24,7 @@ class IdPool(object, metaclass=Singleton):
         self.Id.insert(0, id_)
 
 
-IdPool = IdPool()
+IdPool = _IdPool()
 
 
 # ======================================================== Base ========================================================
