@@ -1,22 +1,17 @@
 # -*- coding: utf-8 -*-
 
-
 import wx
 import DynaUI as UI
 
-# from .dialog import Head
+SIZE_S = wx.Size(80, 24)
+SIZE_B = wx.Size(200, 24)
+SF_S = wx.SizerFlags().Border(wx.ALL, 4).Expand()
+SF_B = wx.SizerFlags().Border(wx.ALL, 2).Proportion(1)
 
-SIZE_BUTTON = wx.Size(100, 36)
-SIZE_18BY18 = wx.Size(18, 18)
-SIZE_36BY36 = wx.Size(36, 36)
-
-SizerFlagsHead = wx.SizerFlags().Border(wx.ALL, 3)
-SizerFlagsMain = wx.SizerFlags().Border(wx.ALL, 4)
-SizerFlagsItem = wx.SizerFlags().Center()
-
-SizerFlagsTitle = wx.SizerFlags().Expand().Border(wx.ALL ^ wx.BOTTOM, 4)
-SizerFlagsPanel = wx.SizerFlags().Expand().Border(wx.ALL ^ wx.TOP, 4)
-SizerFlagsNew = wx.SizerFlags().Expand().Border(wx.ALL, 4)
+SF_ITEM = wx.SizerFlags().Center()
+SF_TITLE = wx.SizerFlags().Expand().Border(wx.ALL ^ wx.BOTTOM, 4)
+SF_PANEL = wx.SizerFlags().Expand().Border(wx.ALL ^ wx.TOP, 4)
+SF_NEW = wx.SizerFlags().Expand().Border(wx.ALL, 4)
 
 
 # ======================================================== Main ========================================================
@@ -25,15 +20,25 @@ class Main(UI.Scrolled):
         super().__init__(parent, edge=None)
         # MainFrame -> BaseDialog -> Main
         self.MainFrame = self.GetGrandParent()
+        self.M = self.MainFrame.M
+        self.M.Manage = self
         self.AddScrollBar((0, 12))
+
         SizerLeft = wx.BoxSizer(wx.VERTICAL)
+        self.Installed = UI.ListCtrl(self, data=[(i,) for i in sorted(self.M.Packages)], width=(-1,))
         SizerLeft.AddMany((
-            (UI.ToolNormal(self, size=SIZE_BUTTON, pics=(self.R["AP_ARROW_D"], "L", 4), tag=(self.L["MANAGE_LOAD"], "L", 28), edge="EM", func=self.OnLoad, showTag=True), SizerFlagsMain),
-            (UI.ToolNormal(self, size=SIZE_BUTTON, pics=(self.R["AP_ARROW_U"], "L", 4), tag=(self.L["MANAGE_SAVE"], "L", 28), edge="EM", func=self.OnSave, showTag=True), SizerFlagsMain),
-            (UI.ToolNormal(self, size=SIZE_BUTTON, pics=(self.R["AP_RESET"], "L", 4), tag=(self.L["MANAGE_RESET"], "L", 28), edge="EM", func=self.OnReset, showTag=True), SizerFlagsMain),
-            (UI.ToolNormal(self, size=SIZE_BUTTON, pics=(self.R["AP_CHECK"], "L", 4), tag=(self.L["DIALOG_READY"], "L", 28), edge="EM", func=self.OnReady, showTag=True), SizerFlagsMain),
-            (UI.ToolNormal(self, size=SIZE_BUTTON, pics=(self.R["AP_CROSS"], "L", 4), tag=(self.L["DIALOG_CLOSE"], "L", 28), edge="EM", func=self.OnClose, showTag=True), SizerFlagsMain),
-            (UI.ToolNormal(self, size=SIZE_BUTTON, pics=(self.R["AP_APPLY"], "L", 4), tag=(self.L["DIALOG_APPLY"], "L", 28), edge="EM", func=self.OnApply, showTag=True), SizerFlagsMain)
+            (self.Installed, 1, wx.EXPAND | wx.ALL, 4),  # TODO IMAGE
+            (UI.ToolNormal(self, size=SIZE_B, pics=(self.R["AP_CLOUD"], "L", 8), tag=(self.L["MANAGE_PKG_REMOTE"], "L", 32), edge="D", func=self.OnRemote, showTag=True), SF_S),
+            (UI.ToolNormal(self, size=SIZE_B, pics=(self.R["AP_LOCAL"], "L", 8), tag=(self.L["MANAGE_PKG_BROWSE"], "L", 32), edge="D", func=self.OnBrowse, showTag=True), SF_S),
+            (UI.ToolNormal(self, size=SIZE_B, pics=(self.R["AP_TRASH"], "L", 8), tag=(self.L["MANAGE_PKG_REMOVE"], "L", 32), edge="D", func=self.OnRemove, showTag=True), SF_S),
+        ))
+
+        SizerButton = wx.BoxSizer(wx.HORIZONTAL)
+        SizerButton.AddMany((
+            (UI.ToolNormal(self, size=SIZE_S, pics=(self.R["AP_RESET"], "L", 8), tag=(self.L["GENERAL_RESET"], "L", 32), edge="D", func=self.OnReset, showTag=True), SF_B),
+            (UI.ToolNormal(self, size=SIZE_S, pics=(self.R["AP_CROSS"], "L", 8), tag=(self.L["GENERAL_CLOSE"], "L", 32), edge="D", func=self.OnClose, showTag=True), SF_B),
+            (UI.ToolNormal(self, size=SIZE_S, pics=(self.R["AP_CHECK"], "L", 8), tag=(self.L["GENERAL_READY"], "L", 32), edge="D", func=self.OnReady, showTag=True), SF_B),
+            (UI.ToolNormal(self, size=SIZE_S, pics=(self.R["AP_APPLY"], "L", 8), tag=(self.L["GENERAL_APPLY"], "L", 32), edge="D", func=self.OnApply, showTag=True), SF_B)
         ))
         SizerRight = wx.BoxSizer(wx.VERTICAL)
         self.Outer = wx.Panel(self)
@@ -44,8 +49,10 @@ class Main(UI.Scrolled):
         InnerSizer = wx.BoxSizer(wx.VERTICAL)
         self.Inner.SetSizer(InnerSizer)
         SizerRight.Add(self.Outer, 1, wx.EXPAND)
+        SizerRight.Add(SizerButton, 0, wx.EXPAND | wx.ALL, 2)
         Sizer = wx.BoxSizer(wx.HORIZONTAL)
-        Sizer.Add(SizerLeft, 0, wx.EXPAND | wx.ALL ^ wx.RIGHT, 4)
+        Sizer.Add(SizerLeft, 0, wx.EXPAND | wx.ALL, 4)
+        Sizer.Add(UI.Separator(self), 0, wx.EXPAND | wx.ALL, 8)
         Sizer.Add(SizerRight, 1, wx.EXPAND | wx.ALL, 4)
         Sizer.Add(UI.SETTINGS["SCROLL_DIAMETER"], 4)
         self.SetSizer(Sizer)
@@ -53,7 +60,7 @@ class Main(UI.Scrolled):
         self.newGroupIndex = 1
         self["NEW"] = None
         self.Groups = {}
-        self.AddItems(self.MainFrame.WidgetList)
+        self.AddItems(self.M.Groups)
 
     # --------------------------------------
     def SetActualSize(self):
@@ -72,15 +79,26 @@ class Main(UI.Scrolled):
         self.SetActualSize()
 
     # --------------------------------------
-    def OnLoad(self):
+    def OnRemote(self):
         pass  # TODO
 
-    def OnSave(self):
-        pass  # TODO
+    def OnBrowse(self):
+        fp = UI.ShowOpenFileDialog(self, self.L["MSG_PKG_INSTALL_HEAD"], "Zip files (*.zip)|*.zip")
+        if fp is not None:
+            title, result = self.M.Install(fp)
+            self.MainFrame.OnDialog("PKG_LOAD_RESULT_%s" % fp, "SIMPLE_TEXT", title, result)
+            self.Installed.SetData([(i,) for i in sorted(self.M.Packages)])
+            self.Installed.ReDraw()
+
+    def OnRemove(self):
+        if self.Installed.HasSelection():
+            self.M.DelPackage(self.Installed.GetStringSelection())
+            self.Installed.SetData([(i,) for i in sorted(self.M.Packages)])
+            self.Installed.ReDraw()
 
     def OnReset(self):
         self.ClearItems()
-        self.AddItems(self.MainFrame.WidgetList)
+        self.AddItems(sum((self.M.Packages[pkgName].__ORI_GROUP__ for pkgName in self.M.Packages), []))
 
     def OnReady(self):
         self.OnApply()
@@ -90,37 +108,57 @@ class Main(UI.Scrolled):
         self.GetParent().Play("FADEOUT")
 
     def OnApply(self):
-        widgetList = []
+        group = []
         for sizerItem in self.Inner.GetSizer().GetChildren():
             window = sizerItem.GetWindow()
             if isinstance(window, GroupTitle):
                 if window.group != self.L["GROUP_NONE"]:
-                    widgetList.append(window.group)
+                    group.append(window.group)
                     for item in self.Groups[window.group]["PANEL"].GetSizer().GetChildren():
                         if isinstance(item.GetWindow(), WidgetItem):
-                            widgetList.append(item.GetWindow().Item)
+                            group.append(item.GetWindow().Item)
         if len(self.Groups[self.L["GROUP_NONE"]]["PANEL"].GetChildren()) > 2:
-            widgetList.append(self.L["GROUP_NONE"])
+            group.append(self.L["GROUP_NONE"])
             for sizerItem in self.Groups[self.L["GROUP_NONE"]]["PANEL"].GetSizer().GetChildren():
                 window = sizerItem.GetWindow()
                 if isinstance(window, WidgetItem):
-                    widgetList.append(window.Item)
-        self.MainFrame.WidgetList = widgetList
-        self.MainFrame.WidgetDict = {i[1].__name__: i[1] for i in widgetList if not isinstance(i, str)}
-        self.MainFrame.Gadget.ClearItems()
-        self.MainFrame.Gadget.AddItems(widgetList)
+                    group.append(window.Item)
+        self.M.Groups = group
+        self.M.Gadget.ClearItems()
+        self.M.Gadget.AddItems(group)
 
     # --------------------------------------
     def AddItems(self, args):
         self.Freeze()
         group = self.NewGroup(self.L["GROUP_NONE"])
         for arg in args:
-            if isinstance(arg, (tuple, list)):
-                self.AddItem(WidgetItem(self.Groups[group]["PANEL"], item=arg, group=group))
-            else:
+            if isinstance(arg, str):
                 group = self.NewGroup(arg or self.L["GROUP_NONE"])
-        self["NEW"] = UI.Button(self.Inner, size=wx.Size(-1, 64), tag=self.L["MANAGE_NEW_GROUP"], func=(self.NewGroup, None, True), res="L", edge="D")
-        self.Inner.GetSizer().Add(self["NEW"], SizerFlagsNew)
+            else:
+                self.AddItem(WidgetItem(self.Groups[group]["PANEL"], item=arg, group=group))
+        if self["NEW"] is None:
+            self["NEW"] = UI.Button(self.Inner, size=wx.Size(-1, 64), tag=self.L["MANAGE_NEW_GROUP"], func=(self.NewGroup, None, True), res="L", edge="D")
+            self.Inner.GetSizer().Add(self["NEW"], SF_NEW)
+        self.Inner.Layout()
+        self.OnSize()
+        self.Thaw()
+
+    def DelItems(self, args):
+        self.Freeze()
+        for arg in args:
+            if not isinstance(arg, str):
+                if arg in self.M.Groups:
+                    group = self.L["GROUP_NONE"]
+                    for i in range(self.M.Groups.index(arg), -1, -1):
+                        if isinstance(self.M.Groups[i], str):
+                            group = self.M.Groups[i]
+                            break
+                    item = [i.GetWindow() for i in self.Groups[group]["PANEL"].GetSizer().GetChildren() if getattr(i.GetWindow(), "Item", None) is arg][0]
+                    item.Destroy()
+        for arg in args:
+            if isinstance(arg, str):
+                if arg in self.Groups:
+                    self.DelGroup(arg)
         self.Inner.Layout()
         self.OnSize()
         self.Thaw()
@@ -144,22 +182,22 @@ class Main(UI.Scrolled):
         panel = UI.BaseControl(self.Inner)
         title = GroupTitle(self.Inner, group)
         groupSizer = wx.WrapSizer()
-        btnAdd = UI.Button(panel, size=SIZE_36BY36, pic=self.R["MANAGE_ADD"], func=None, edge=None, res="L")
-        groupSizer.Add(btnAdd, SizerFlagsItem)
-        btnDel = UI.Button(panel, size=SIZE_36BY36, pic=self.R["MANAGE_DEL"], func=(self.DelGroup, title), edge=None, res="L")
-        groupSizer.Add(btnDel, SizerFlagsItem)
+        btnAdd = UI.Button(panel, size=wx.Size(36, 36), pic=self.R["MANAGE_ADD"], func=None, edge=None, res="L")
+        groupSizer.Add(btnAdd, SF_ITEM)
+        btnDel = UI.Button(panel, size=wx.Size(36, 36), pic=self.R["MANAGE_DEL"], func=(self.DelGroup, title), edge=None, res="L")
+        groupSizer.Add(btnDel, SF_ITEM)
         panel.SetSizer(groupSizer)
-        self.Inner.GetSizer().AddMany(((title, SizerFlagsTitle), (panel, SizerFlagsPanel)))
+        self.Inner.GetSizer().AddMany(((title, SF_TITLE), (panel, SF_PANEL)))
         self.Groups[group] = {"TITLE": title, "PANEL": panel, "ADD": btnAdd, "DEL": btnDel}
         if self["NEW"]:
             self.Inner.GetSizer().Detach(self["NEW"])
-            self.Inner.GetSizer().Add(self["NEW"], SizerFlagsNew)
+            self.Inner.GetSizer().Add(self["NEW"], SF_NEW)
         if layout:
             self.OnArrangement()
         return group
 
     def DelGroup(self, title):
-        group = title.group
+        group = title.group if hasattr(title, "group") else title
         if group == self.L["GROUP_NONE"]:
             return
         for child in self.Groups[group]["PANEL"].GetChildren():
@@ -176,7 +214,7 @@ class Main(UI.Scrolled):
     def AddItem(self, item, index=None, layout=False):
         sizer = item.GetParent().GetSizer()
         index = sizer.GetItemCount() - 2 if index is None else min(index, sizer.GetItemCount() - 2)
-        sizer.Insert(index, item, SizerFlagsItem)
+        sizer.Insert(index, item, SF_ITEM)
         item.currentIndex = index
         if layout:
             self.OnArrangement()
@@ -194,7 +232,7 @@ class Main(UI.Scrolled):
 
 
 # ======================================================= Title ========================================================
-class GroupTitle(UI.Button):  # TODO
+class GroupTitle(UI.Button):
     def __init__(self, parent, group):
         self.group = group
         isNoGroup = group == parent.L["GROUP_NONE"]
@@ -203,7 +241,7 @@ class GroupTitle(UI.Button):  # TODO
         self.Main = parent.GetGrandParent()
         if not isNoGroup:
             self.Text = UI.Text(self, style=wx.TE_CENTER | wx.SIMPLE_BORDER)
-            self.Text.SetMaxLength(20)
+            self.Text.SetMaxLength(24)
             self.Text.Hide()
             self.Text.Bind(wx.EVT_KILL_FOCUS, self.OnTextLost)
             self.Text.Bind(wx.EVT_TEXT_ENTER, self.OnTextEnter)
@@ -217,6 +255,7 @@ class GroupTitle(UI.Button):  # TODO
     def ShowNameChange(self):
         self.GetSizer().GetChildren()[2].SetProportion(0)
         self.Text.SetValue(self.group)
+        self.Text.SelectAll()
         self.Text.Show()
         self.Text.SetFocus()
         self.Layout()
@@ -261,15 +300,15 @@ class GroupTitle(UI.Button):  # TODO
             index = min(index + 2, Sizer.GetItemCount() - 3)
         Sizer.Detach(self)
         Sizer.Detach(panel)
-        Sizer.Insert(index, self, SizerFlagsTitle)
-        Sizer.Insert(index + 1, panel, SizerFlagsPanel)
+        Sizer.Insert(index, self, SF_TITLE)
+        Sizer.Insert(index + 1, panel, SF_PANEL)
         self.Main.OnArrangement()
 
 
 # ======================================================== Item ========================================================
 class WidgetItem(UI.Button):
     def __init__(self, parent, item, group):
-        super().__init__(parent, size=wx.Size(108, 36), tag=("\n".join(item[1].NAME.split()), "L", 38), pic=(parent.R["WIDGET_BUTTON"][item[1].KEY], "L", 2), res="L", edge=None)
+        super().__init__(parent, size=wx.Size(108, 36), tag=("\n".join(item.NAME.split()), "L", 38), pic=(item.__RES__["BUTTON"], "L", 2), res="L", edge=None)
         self.Item = item
         # Main - Outer - Inner - Title/Panel - Item
         self.Inner = self.GetGrandParent()
@@ -293,7 +332,7 @@ class WidgetItem(UI.Button):
         if evtType == wx.wxEVT_LEFT_DOWN:
             if not self.HasCapture(): self.CaptureMouse()
             self.leftDown = True
-            self.SetCursor(self.R["WIDGET_CURSOR"][self.Item[1].KEY])
+            self.SetCursor(self.Item.__RES__["CURSOR"])
         elif evtType == wx.wxEVT_LEFT_UP:
             if self.HasCapture(): self.ReleaseMouse()
             UI.Do(self.todo)
@@ -363,9 +402,11 @@ class WidgetItem(UI.Button):
 # ======================================================= Manage =======================================================
 class Manage(UI.BaseDialog):
     def __init__(self, parent):
-        super().__init__(parent=parent, title=parent.L["MANAGE_TITLE"], size=wx.Size(500, 480), main=Main)
-        self.Head.GetSizer().Insert(0, UI.ToolNormal(self.Head, size=SIZE_18BY18, pics=self.R["AP_HELP"], edge=None, func=(parent.OnDialog, "MANAGE_HELP", "SIMPLE_TEXT", self.L["MANAGE_HELP_HEAD"], self.L["MANAGE_HELP_TEXT"])),
-                                    SizerFlagsHead)
+        super().__init__(parent=parent, title=parent.L["MANAGE_TITLE"], size=wx.Size(720, 480), main=Main)
+        self.Head.GetSizer().Insert(0,
+                                    UI.ToolNormal(self.Head, size=UI.SETTINGS["DLG_HEAD_BTN"], pics=self.R["AP_HELP"],
+                                                  func=(parent.OnDialog, "MANAGE_HELP", "SIMPLE_TEXT", self.L["MANAGE_HELP_HEAD"], self.L["MANAGE_HELP_TEXT"])),
+                                    0, wx.ALL, 3)
         self.Head.SetTagOffset(24, 0)
         self.Center()
         self.Layout()

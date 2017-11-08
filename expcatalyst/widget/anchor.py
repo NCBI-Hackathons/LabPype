@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 
-
 import wx
 from .base import Base
 from .link import LegitLink
-from . import widget as Wi
 
 __all__ = ["Anchor"]
 
@@ -19,7 +17,6 @@ __all__ = ["Anchor"]
 #   GetType   -  By default return aType. Override for flexibility
 #   GetName   -  How canvas display the name of this anchor
 # ======================================================= Anchor =======================================================
-
 ANCHOR_STATE_IDLE = 1 << 0
 ANCHOR_STATE_PASS = 1 << 1
 ANCHOR_STATE_FAIL = 1 << 2
@@ -111,7 +108,7 @@ class Anchor(Base):
             state = ANCHOR_STATE_IDLE
             if self.Canvas.Hovered == self.Widget or self.Canvas.Hovered in self.Widget.Anchors:
                 pass
-            elif isinstance(self.Canvas.Hovered, Wi.Widget):
+            elif hasattr(self.Canvas.Hovered, "__INITIALIZED__"):
                 for a in self.Canvas.Hovered.Anchors:
                     if LegitLink(a, self):
                         if a.multiple or not a.connected:
@@ -133,26 +130,26 @@ class Anchor(Base):
             self.Canvas.TempLink[2] = (self.leftPos[0] - 0.5, self.leftPos[1] - 0.5)
 
     # ----------------------------------------------------------
-    def EmptyTarget(self, sendEvent):
+    def EmptyTarget(self, onAlter):
         if self.recv:
             for dest in self.connected.copy():
                 dest.RemoveTarget(self, False)
-            if sendEvent:
-                self.Widget.OnSetIncoming()
+            if onAlter:
+                self.Widget.OnAlter()
         else:
             for dest in self.connected.copy():
-                self.RemoveTarget(dest, sendEvent)
+                self.RemoveTarget(dest, onAlter)
 
-    def RemoveTarget(self, dest, sendEvent):  # self always send, dest always recv
+    def RemoveTarget(self, dest, onAlter):  # self always send, dest always recv
         self.connected.remove(dest)
         dest.connected.remove(self)
         self.Canvas.RemoveLink(self, dest)
-        if sendEvent:
-            dest.Widget.OnSetIncoming()
+        if onAlter:
+            dest.Widget.OnAlter()
 
-    def SetTarget(self, dest, sendEvent=True):  # self always send, dest always recv
+    def SetTarget(self, dest, onAlter=True):  # self always send, dest always recv
         if DetectCircularReference(dest.Widget, self.Widget):  # Check the opposite send
-            return self.Canvas.GetParent().SetStatus(self.Canvas.L["MSG_CIRCULAR_LINKAGE"], 1, 5)
+            return self.Canvas.SetStatus(self.Canvas.L["MSG_CIRCULAR_LINKAGE"], 1, 5)
         if dest in self.connected:
             return self.RemoveTarget(dest, True)
         if dest.single and dest.connected:
@@ -162,8 +159,8 @@ class Anchor(Base):
         self.connected.append(dest)
         dest.connected.append(self)
         self.Canvas.AppendLink(self, dest)
-        if sendEvent:
-            dest.Widget.OnSetIncoming()
+        if onAlter:
+            dest.Widget.OnAlter()
 
     # ----------------------------------------------------------
     def GetType(self):

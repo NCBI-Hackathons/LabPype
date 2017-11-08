@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 
-
 from DynaUI import Locale
 
 __all__ = ["Locale"]
 
 Locale.DEFAULT = {
     "TITLE"               : "ExpCatalyst",
-    "GROUP_NONE"          : "* Ungrouped *",  # value is used as a key
+
+    "GROUP_NONE"          : "---- Not grouped ----",  # value is used as a key for widget group
     "GROUP_NEW"           : "New Group",
+
+    "WIDGET_FAIL"         : "Task failed",
+    "WIDGET_DONE"         : "Task done",
 
     "GADGET_SEARCH"       : "Search Widgets",
     "GADGET_CANCEL"       : "Clear search",
@@ -46,18 +49,21 @@ Locale.DEFAULT = {
     "MSG_TOO_MANY_WIDGETS": "Too many widgets!",
     "MSG_SINGLETON_EXISTS": "This widget can only have one instance!",
     "MSG_CIRCULAR_LINKAGE": "Circular reference is not allowed!",
-
-    "GENERAL_HEAD_FAIL"   : "Error",
-    "GENERAL_HEAD_LOAD"   : "Load...",
-    "GENERAL_HEAD_SAVE"   : "Save...",
+    "MSG_WORKSPACE_FAIL"  : "Failed to use \"%s\" as workspace.",
+    "MSG_UNKNOWN_WIDGET"  : "Failed to load the file: Unknown widget %s",
     "MSG_LOAD_FILE_FAILED": "Failed to load the file!",
     "MSG_SAVE_FILE_FAILED": "Failed to save the file!",
 
-    "DIALOG_READY"        : "OK",
-    "DIALOG_BEGIN"        : "Run",
-    "DIALOG_ABORT"        : "Stop",
-    "DIALOG_APPLY"        : "Apply",
-    "DIALOG_CLOSE"        : "Cancel",
+    "GENERAL_HEAD_FAIL"   : "An error has occurred",
+    "GENERAL_HEAD_LOAD"   : "Load...",
+    "GENERAL_HEAD_SAVE"   : "Save...",
+
+    "GENERAL_READY"       : "OK",
+    "GENERAL_BEGIN"       : "Run",
+    "GENERAL_ABORT"       : "Stop",
+    "GENERAL_APPLY"       : "Apply",
+    "GENERAL_CLOSE"       : "Cancel",
+    "GENERAL_RESET"       : "Reset",
 
     "DIALOG_HEAD_LOAD"    : "Load project/scheme",
     "DIALOG_HEAD_SAVE"    : "Save project/scheme",
@@ -73,10 +79,11 @@ Locale.DEFAULT = {
     "DIALOG_NEW?_INFO"    : "Canvas is not empty. Are you sure you want to clear the canvas?",
 
     "MANAGE_TITLE"        : "Widget Manage",
-    "MANAGE_LOAD"         : "Load ...",
-    "MANAGE_SAVE"         : "Save ...",
-    "MANAGE_RESET"        : "Reset",
-    "MANAGE_NEW_GROUP"    : "+ New Group +",
+    "MANAGE_PKG_REMOTE"   : "Download from repository",
+    "MANAGE_PKG_BROWSE"   : "Install from disk",
+    "MANAGE_PKG_REMOVE"   : "Remove selected package",
+
+    "MANAGE_NEW_GROUP"    : "+ Add New Group +",
     "MANAGE_HELP_HEAD"    : "How to manage widgets",
     "MANAGE_HELP_TEXT"    : "To add widget, \n"
                             "To remove widget, \n"
@@ -85,5 +92,12 @@ Locale.DEFAULT = {
                             "To rearrange widget, \n"
                             "To rearrange group, \n"
                             "To change group name, \n",
+
+    "MSG_PKG_INIT_FAIL"   : "The following package(s) cannot be loaded:\n%s",
+    "MSG_PKG_INSTALL_HEAD": "Package install",
+    "MSG_PKG_EXTRACT_FAIL": "Failed to extract %s",
+    "MSG_PKG_INSTALL_DONE": "The following packages have been successfully installed:",
+    "MSG_PKG_INSTALL_FAIL": "The following packages cannot be installed:",
+    "MSG_PKG_ALREADY_HERE": "The following packages are already installed:",
 
 }

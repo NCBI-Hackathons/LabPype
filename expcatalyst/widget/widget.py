@@ -1,79 +1,21 @@
 # -*- coding: utf-8 -*-
 
-
 import wx
 import math
 import json
 import threading
-import wx.lib.newevent
-from DynaUI import GetTextExtent
+from DynaUI import GetMultiLineTextExtent, DoNothing
 from .dialog import MakeWidgetDialog, Dialog
 from .base import Base, IdPool
 from .field import BaseField
-from . import anchor as An
+from .anchor import Anchor
 
-__all__ = ["Widget", "Interrupted", "Synced"]
-
-WidgetEvent, EVT_WIDGET = wx.lib.newevent.NewEvent()
-
-EVT_WIDGET_START = 1
-EVT_WIDGET_ALTER = 2
-EVT_WIDGET_DONE = 3
-EVT_WIDGET_FAIL = 4
-
-WIDGET_STATE_IDLE = 1 << 0
-WIDGET_STATE_FAIL = 1 << 1
-WIDGET_STATE_WAIT = 1 << 2
-WIDGET_STATE_WORK = 1 << 3
-WIDGET_STATE_DONE = 1 << 4
-WIDGET_STATE = 0b11111
-
-STATE_HANDLER = {WIDGET_STATE_IDLE: "HandlerIdle",
-                 WIDGET_STATE_FAIL: "HandlerFail",
-                 WIDGET_STATE_WAIT: "HandlerWait",
-                 WIDGET_STATE_WORK: "HandlerWork",
-                 WIDGET_STATE_DONE: "HandlerDone"}
-
-
-# ======================================================= Thread =======================================================
-class Interrupted(Exception):
-    """Raise to interrupt running thread"""
-
-
-class Thread(threading.Thread):
-    def __init__(self, Widget):
-        super().__init__()
-        self.setDaemon(True)
-        self.Widget = Widget
-        self.stop = False
-
-    def Stop(self):
-        self.stop = True
-
-    def Stopped(self):
-        return self.stop
-
-    def run(self):
-        try:
-            out = self.Widget.Task()
-            with self.Widget.Lock:
-                if self.Widget.state == WIDGET_STATE_WORK and self.Widget.Thread == self:
-                    self.Widget["OUT"] = out
-                    self.Widget.OnFail() if out is None else self.Widget.OnDone()
-        except Interrupted:
-            pass
-        except Exception:
-            with self.Widget.Lock:
-                if self.Widget.state == WIDGET_STATE_WORK and self.Widget.Thread == self:
-                    self.Widget.OnFail()
-
-
-def Synced(func):
-    def SyncedFunc(self, *args, **kwargs):
-        with self.Lock:
-            return func(self, *args, **kwargs)
-
-    return SyncedFunc
+__all__ = [
+    "BaseWidget",
+    "Widget",
+    "Thread",
+    "Synced",
+]
 
 
 # ================================================== How to Subclass ===================================================
@@ -91,9 +33,40 @@ def Synced(func):
 #       Save      -  to do
 #       Load      -  to do
 #   Destroy must be called when deleting the widget to (i)clear links; (ii)close dialog; (iii)stop thread; (iv)release id
-# ======================================================= Widget =======================================================
-class Widget(wx.EvtHandler, Base):
-    KEY = None
+# ======================================================================================================================
+
+
+# ======================================================== Misc ========================================================
+class Interrupted(Exception):
+    """Raise to interrupt running thread"""
+
+
+def Synced(func):
+    def SyncedFunc(self, *args, **kwargs):
+        if self.THREAD:
+            with self.Canvas.Lock:
+                return func(self, *args, **kwargs)
+        else:
+            return func(self, *args, **kwargs)
+
+    return SyncedFunc
+
+
+class Thread(threading.Thread):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setDaemon(True)
+        self.stop = False
+        self.progress = ()
+
+    def CheckPoint(self, *args):
+        if self.stop:
+            raise Interrupted
+        self.progress = args
+
+
+# ===================================================== BaseWidget =====================================================
+class BaseWidget(Base):
     NAME = ""
     DIALOG = None
     THREAD = False
@@ -102,10 +75,14 @@ class Widget(wx.EvtHandler, Base):
     OUTGOING = None
     SINGLETON = False
 
+    __COLOR__ = None
+    __ICON__ = None
+    __RES__ = None
+    __ID__ = None
+
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, "__INITIALIZED__"):
             cls.__INITIALIZED__ = True
-            cls.NAME = args[0].L.Get(cls.NAME, "WIDGET_NAME_")
             if cls.DIALOG in ("H", "V"):
                 cls.DIALOG = type("_AutoDialog" + cls.__name__, (Dialog,), {"ORIENTATION": cls.DIALOG})
             elif isinstance(cls.DIALOG, dict):
@@ -124,23 +101,19 @@ class Widget(wx.EvtHandler, Base):
                 cls.OUTGOING = (cls.OUTGOING, "Output", None)
         return super().__new__(cls)
 
-    def __init__(self, canvas):
-        wx.EvtHandler.__init__(self)
-        Base.__init__(self, w=56, h=56)
+    def __init__(self, canvas, states):
+        super().__init__(w=68, h=68)
         self.Canvas = canvas
-        self.name = self.NAME
-        self.namePos = (0, 0)
-        self.rect.SetSize((68, 68))
-        self.state = WIDGET_STATE_IDLE
-        self.stateHandler = self.HandlerIdle
-        self.Bind(EVT_WIDGET, lambda evt: self.stateHandler(evt))
-        self.dialogSize = None
-        self.dialogPos = None
+        self.Record = canvas.GetParent().Record
+        self.Bitmap = None
+        self.name = None
+        self.namePos = None
+        self.nameSize = None
         self.Dialog = None
+        self.DialogPos = None
+        self.DialogSize = None
         self.Thread = None
-        self.Lock = threading.RLock()
         self.Data = {}
-        self.Anchors = []
         self.Incoming = []
         self.Outgoing = []
         self.Key2Anchor = {}
@@ -153,31 +126,21 @@ class Widget(wx.EvtHandler, Base):
                 self.AddAnchor(False, *args)
         if self.OUTGOING:
             self.AddAnchor(True, self.OUTGOING[0], "OUT", True, "RBT", self.Canvas.L.Get(self.OUTGOING[1], "ANCHOR_NAME_"), self.OUTGOING[2])
+        self.Anchors = self.Incoming + self.Outgoing
         if self.__class__.SINGLETON:
             self.__class__.SINGLETON = self
+        self.state = None
+        self.SetState(states[0])
         self.Init()
 
-    def __setitem__(self, key, value):
-        self.Data[key] = value
-
-    def __getitem__(self, item):
-        return self.Data[item]
-
-    def AddAnchor(self, send, aType, key, multiple, pos, name="", anchor=None):
-        a = (anchor or An.Anchor)(self, aType, key, multiple, send, pos, self.Canvas.L.Get(name, "ANCHOR_NAME_"))
-        (self.Outgoing if send else self.Incoming).append(a)
-        self.Anchors.append(a)
-        self.Data[key] = None
-        self.Key2Anchor[key] = a
-        self.Pos2Anchor[a.pos].append(a)
-
+    # -------------------------------------------------------- #
+    @Synced
     def Destroy(self):
-        self.Unbind(EVT_WIDGET)
+        self.Exit()
+        getattr(self, "OnLeave%s" % self.state, DoNothing)()
         if self.Dialog:
             self.Dialog.OnClose()
-        self.Stop()
-        self.Exit()
-        self.SetState(WIDGET_STATE_IDLE)
+        self.StopThread()
         for a in reversed(self.Anchors):
             a.EmptyTarget(a.send)
             IdPool.Release(a.Id)
@@ -185,6 +148,41 @@ class Widget(wx.EvtHandler, Base):
         if isinstance(self.__class__.SINGLETON, self.__class__):
             self.__class__.SINGLETON = True
         self.Data = None
+
+    @Synced
+    def IsState(self, state):
+        if isinstance(state, tuple):
+            return self.state in state
+        else:
+            return self.state == state
+
+    @Synced
+    def SetState(self, state):
+        getattr(self, "OnLeave%s" % self.state, DoNothing)()
+        self.state = state
+        getattr(self, "OnEnter%s" % self.state, DoNothing)()
+        self.SetName()
+        wx.CallAfter(self.Canvas.ReDraw)
+
+    # -------------------------------------------------------- #
+    def __setitem__(self, key, value):
+        self.Data[key] = value
+
+    def __getitem__(self, item):
+        return self.Data[item]
+
+    def AddAnchor(self, send, aType, key, multiple, pos, name="", anchor=None):
+        a = (anchor or Anchor)(self, aType, key, multiple, send, pos, self.Canvas.L.Get(name, "ANCHOR_NAME_"))
+        (self.Outgoing if send else self.Incoming).append(a)
+        self.Data[key] = None
+        self.Key2Anchor[key] = a
+        self.Pos2Anchor[a.pos].append(a)
+
+    def SetName(self):
+        name = self.Name()
+        self.name = self.NAME if name is None else name
+        self.nameSize = GetMultiLineTextExtent(self.Canvas, self.name)
+        self.PositionName()
 
     def NewPosition(self, x, y):
         if self.Canvas.S["TOGGLE_SNAP"]:
@@ -214,11 +212,8 @@ class Widget(wx.EvtHandler, Base):
                 self.Pos2Anchor[a.pos].append(a)
         for p in "LRTB":
             n = len(self.Pos2Anchor[p])
-            if n == 1:
-                self._PositionAnchor(self.Pos2Anchor[p][0])
-            elif n > 1:
-                for index, a in enumerate(self.Pos2Anchor[p]):
-                    self._PositionAnchor(a, index * 18 + (1 - n) * 9)
+            for index, a in enumerate(self.Pos2Anchor[p]):
+                self._PositionAnchor(a, index * 18 + (1 - n) * 9)
 
     def _PositionAnchor(self, a, offset=0):
         if a.pos == "L":
@@ -236,33 +231,23 @@ class Widget(wx.EvtHandler, Base):
         a.SetPosition(self.x + ax, self.y + ay)
 
     def PositionName(self):
-        self.namePos = self.x + 28 - GetTextExtent(self.Canvas, self.name)[0] // 2, self.y - 20 if len(self.Anchors) == 1 and self.Anchors[0].pos == "B" else self.y + 64
+        self.namePos = self.x + 28 - self.nameSize[0] // 2, self.y - self.nameSize[1] - 8 if len(self.Anchors) == 1 and self.Anchors[0].pos == "B" else self.y + 64
 
     def Draw(self, dc):
-        key = "WIDGET_CANVAS"
-        if self.state == WIDGET_STATE_DONE:
-            key = "WIDGET_CANVAS_DONE"
-        elif self.state == WIDGET_STATE_WAIT:
-            key = "WIDGET_CANVAS_WAIT"
-        elif self.state == WIDGET_STATE_FAIL:
-            key = "WIDGET_CANVAS_FAIL"
-        elif self.state == WIDGET_STATE_WORK:
-            if self.Canvas.colorLastBlink:
-                key = "WIDGET_CANVAS_DONE"
-        dc.DrawBitmap(self.Canvas.R[key][self.KEY], self.x, self.y)
+        dc.DrawBitmap(self.Bitmap, self.x, self.y)
         if self.Dialog:
-            if self.Dialog.detached:
-                dc.DrawBitmap(self.Canvas.R["DIALOG_DTCH"][3], self.x + 36, self.y)
-            else:
-                dc.DrawBitmap(self.Canvas.R["DIALOG_ATCH"][3], self.x + 36, self.y)
+            dc.DrawBitmap(self.Canvas.R["DIALOG_DTCH" if self.Dialog.detached else "DIALOG_ATCH"][3], self.x + 36, self.y)
         if self.Canvas.S["TOGGLE_NAME"]:
-            dc.nameTexts.append(self.name)
+            if self.Thread and self.Thread.progress:
+                dc.nameTexts.append("%s (%s/%s)" % (self.name, self.Thread.progress[0], self.Thread.progress[1]))
+            else:
+                dc.nameTexts.append(self.name)
             dc.namePoints.append(self.namePos)
         if self.Canvas.S["TOGGLE_ANCR"]:
             for a in self.Anchors:
                 a.Draw(dc)
 
-    # ----------------------------------------------------------
+    # -------------------------------------------------------- #
     def GetLinkedWidget(self, key=None):
         if key is None:
             for a in self.Anchors:
@@ -282,16 +267,6 @@ class Widget(wx.EvtHandler, Base):
             for dest in a.connected:
                 yield dest.Widget
 
-    def PostToOutgoingWidget(self, evtType, state=WIDGET_STATE):
-        for w in self.GetOutgoingWidget():
-            if w.IsState(state):
-                wx.PostEvent(w, WidgetEvent(evtType=evtType))
-
-    def PostToIncomingWidget(self, evtType, state=WIDGET_STATE):
-        for w in self.GetIncomingWidget():
-            if w.IsState(state):
-                wx.PostEvent(w, WidgetEvent(evtType=evtType))
-
     def IsOutgoingAvailable(self):
         for a in self.Outgoing:
             if not a.connected:
@@ -310,8 +285,8 @@ class Widget(wx.EvtHandler, Base):
                 return False
         return True
 
-    def InitData(self):
-        self.Reset()
+    # -------------------------------------------------------- #
+    def UpdateData(self):
         for a in self.Incoming:
             if a.connected:
                 if a.multiple:
@@ -323,7 +298,12 @@ class Widget(wx.EvtHandler, Base):
         for a in self.Outgoing:
             self[a.key] = None
 
-    # ----------------------------------------------------------
+    def UpdateDialog(self):
+        if self.Dialog:
+            if not self.Dialog.detached:
+                wx.CallAfter(self.Dialog.Head.Play, "ENTER_THEN_LEAVE")
+            wx.CallAfter(self.Dialog.GetData)
+
     def OnActivation(self):
         if self.Dialog:
             if self.Dialog.detached:
@@ -334,100 +314,12 @@ class Widget(wx.EvtHandler, Base):
             self.Dialog.SetFocus()
         elif self.DIALOG:
             self.Dialog = MakeWidgetDialog(self)
-            if self.THREAD and self.Dialog:
-                if self.IsRunning():
-                    self.Dialog[3].Hide()
-                    self.Dialog[4].Show()
-                else:
-                    self.Dialog[4].Hide()
-                    self.Dialog[3].Show()
-                self.Dialog.Layout()
+            self.OnShowDialog()
 
-    def OnSetIncoming(self):
-        wx.PostEvent(self, WidgetEvent(evtType=EVT_WIDGET_ALTER))
-
-    def OnSetInternal(self):
-        wx.PostEvent(self, WidgetEvent(evtType=EVT_WIDGET_ALTER))
-
-    def OnStart(self):
-        wx.PostEvent(self, WidgetEvent(evtType=EVT_WIDGET_START))
-
-    def OnFail(self):
-        wx.PostEvent(self, WidgetEvent(evtType=EVT_WIDGET_FAIL))
-
-    def OnDone(self):
-        wx.PostEvent(self, WidgetEvent(evtType=EVT_WIDGET_DONE))
-
-    def Stop(self):
-        if self.Thread and self.Thread.isAlive():
-            self.Thread.Stop()
+    def StopThread(self):
+        if self.THREAD and self.Thread:
+            self.Thread.stop = True
             self.Thread = None
-
-    def Run(self):
-        self.SetState(WIDGET_STATE_WORK)
-        self.InitData()
-        if self.THREAD:
-            self.Thread = Thread(self)
-            self.Thread.start()
-        else:
-            try:
-                self["OUT"] = self.Task()
-                self.OnFail() if self["OUT"] is None else self.OnDone()
-            except Exception:
-                self.OnFail()
-
-    @Synced
-    def IsIdle(self):
-        return self.state == WIDGET_STATE_IDLE
-
-    @Synced
-    def IsDone(self):
-        return self.state == WIDGET_STATE_DONE
-
-    @Synced
-    def IsFailed(self):
-        return self.state == WIDGET_STATE_FAIL
-
-    @Synced
-    def IsWorking(self):
-        return self.state == WIDGET_STATE_WORK
-
-    @Synced
-    def IsWaiting(self):
-        return self.state == WIDGET_STATE_WAIT
-
-    @Synced
-    def IsRunning(self):
-        return self.state in (WIDGET_STATE_WORK, WIDGET_STATE_WAIT)
-
-    @Synced
-    def IsState(self, state):
-        return self.state & state
-
-    # ----------------------------------------------------------
-    @Synced
-    def SetState(self, state):
-        if self.state == WIDGET_STATE_WORK:
-            self.Canvas.WidgetRunning(0)
-        if state == WIDGET_STATE_WORK:
-            self.Canvas.WidgetRunning(1)
-        if self.THREAD and self.Dialog:
-            if state in (WIDGET_STATE_WORK, WIDGET_STATE_WAIT):
-                self.Dialog[3].Hide()
-                self.Dialog[4].Show()
-            else:
-                self.Dialog[4].Hide()
-                self.Dialog[3].Show()
-            self.Dialog.Layout()
-        self.state = state
-        self.stateHandler = getattr(self, STATE_HANDLER[state])
-        self.SetName()
-        self.Canvas.ReDraw()
-
-    def SetName(self):
-        name = self.Name()
-        self.name = self.NAME if name is None else name
-        self.PositionName()
 
     def SaveData(self):
         return self.Save()
@@ -436,110 +328,24 @@ class Widget(wx.EvtHandler, Base):
         self.Data = self.Load(f)
         self.SetName()
 
-    @Synced
+    # -------------------------------------------------------- #
+    def OnBegin(self):
+        raise NotImplementedError
+
+    def OnAlter(self):
+        raise NotImplementedError
+
+    def OnShowDialog(self):
+        raise NotImplementedError
+
     def SaveState(self):
-        return (self.state & 0b10011) or 1
+        raise NotImplementedError
 
-    @Synced
     def LoadState(self, state):
-        self.state = state
-        self.stateHandler = getattr(self, STATE_HANDLER[state])
+        raise NotImplementedError
 
-    def HandlerIdle(self, evt):
-        if evt.evtType == EVT_WIDGET_ALTER:
-            self.InitData()
-            if self.Dialog:
-                wx.CallAfter(self.Dialog.GetData)
-            self.PostToOutgoingWidget(EVT_WIDGET_ALTER, WIDGET_STATE_IDLE)
-        elif evt.evtType == EVT_WIDGET_START:
-            if not self.IsIncomingAvailable() or not self.IsInternalAvailable():
-                self.SetState(WIDGET_STATE_FAIL)
-                self.PostToOutgoingWidget(EVT_WIDGET_FAIL)
-                return
-            fail = False
-            wait = False
-            for w in self.GetIncomingWidget():
-                if w.IsFailed():
-                    fail = True
-                elif w.IsWorking():
-                    wait = True
-                elif w.IsWaiting():
-                    wait = True
-                elif w.IsIdle():
-                    wait = True
-            if fail:
-                self.SetState(WIDGET_STATE_FAIL)
-                self.PostToOutgoingWidget(EVT_WIDGET_FAIL)
-            elif wait:
-                self.SetState(WIDGET_STATE_WAIT)
-                self.PostToIncomingWidget(EVT_WIDGET_START, WIDGET_STATE_IDLE)
-            else:
-                self.Run()
-
-    def HandlerWait(self, evt):
-        if evt.evtType == EVT_WIDGET_ALTER:
-            self.SetState(WIDGET_STATE_IDLE)
-            self.InitData()
-            self.PostToOutgoingWidget(EVT_WIDGET_ALTER, WIDGET_STATE_WAIT | WIDGET_STATE_FAIL | WIDGET_STATE_IDLE)
-        elif evt.evtType == EVT_WIDGET_FAIL:
-            self.SetState(WIDGET_STATE_FAIL)
-            self.PostToOutgoingWidget(EVT_WIDGET_FAIL, WIDGET_STATE_WAIT)
-        elif evt.evtType == EVT_WIDGET_START:
-            wait = False
-            for w in self.GetIncomingWidget():
-                if w.IsWorking():
-                    wait = True
-                elif w.IsWaiting():
-                    wait = True
-                elif w.IsIdle():
-                    wait = True
-                elif w.IsFailed():
-                    wait = True
-            if not wait:
-                self.Run()
-
-    def HandlerWork(self, evt):
-        if evt.evtType == EVT_WIDGET_ALTER:
-            self.SetState(WIDGET_STATE_IDLE)
-            self.InitData()
-            self.PostToOutgoingWidget(EVT_WIDGET_ALTER, WIDGET_STATE_WAIT | WIDGET_STATE_FAIL)
-            self.Stop()
-        elif evt.evtType == EVT_WIDGET_DONE:
-            self.SetState(WIDGET_STATE_DONE)
-            self.PostToOutgoingWidget(EVT_WIDGET_START, WIDGET_STATE_WAIT)
-        elif evt.evtType == EVT_WIDGET_FAIL:
-            self.SetState(WIDGET_STATE_FAIL)
-            self.PostToOutgoingWidget(EVT_WIDGET_FAIL, WIDGET_STATE_WAIT)
-        if self.Dialog:
-            if not self.Dialog.detached:
-                wx.CallAfter(self.Dialog.Head.Play, "ENTER_THEN_LEAVE")
-            wx.CallAfter(self.Dialog.GetData)
-
-    def HandlerFail(self, evt):
-        if evt.evtType == EVT_WIDGET_ALTER:
-            self.SetState(WIDGET_STATE_IDLE)
-            self.InitData()
-            if self.Dialog:
-                wx.CallAfter(self.Dialog.GetData)
-            self.PostToOutgoingWidget(EVT_WIDGET_ALTER, WIDGET_STATE_FAIL | WIDGET_STATE_IDLE)
-
-    def HandlerDone(self, evt):
-        if evt.evtType == EVT_WIDGET_ALTER:
-            self.SetState(WIDGET_STATE_IDLE)
-            self.InitData()
-            if self.Dialog:
-                wx.CallAfter(self.Dialog.GetData)
-            self.PostToOutgoingWidget(EVT_WIDGET_ALTER, WIDGET_STATE)
-        elif evt.evtType == EVT_WIDGET_START:
-            self.PostToOutgoingWidget(EVT_WIDGET_ALTER)
-            self.Run()
-
-    # ----------------------------------------------------------
     def Name(self):
         return self.NAME
-
-    def Task(self):
-        return False
 
     def Save(self):
         return json.dumps(self.Data)
@@ -552,6 +358,173 @@ class Widget(wx.EvtHandler, Base):
 
     def Exit(self):
         pass
+
+
+# ======================================================= Widget =======================================================
+class Widget(BaseWidget):
+    def __init__(self, canvas):
+        super().__init__(canvas, ("Idle", "Fail", "Done", "Wait", "Work"))
+
+    def OnBegin(self):
+        if not (self.IsIncomingAvailable() and self.IsInternalAvailable()):
+            self.SetState("Fail")
+            return
+        fail = False
+        wait = False
+        for w in self.GetIncomingWidget():
+            if w.IsState("Idle"):
+                w.OnBegin()
+            if w.IsState("Fail"):
+                fail = True
+            elif w.IsState(("Work", "Wait")):
+                wait = True
+        if fail:
+            self.SetState("Fail")
+        elif wait:
+            self.SetState("Wait")
+        else:
+            self.SetState("Work")
+
+    def OnAlter(self):
+        self.SetState("Idle")
+        self.StopThread()
+        self.UpdateData()
+        for w in self.GetOutgoingWidget():
+            w.OnAlter()
+
+    def OnShowDialog(self):
+        if self.THREAD and self.Dialog:
+            if self.IsState(("Work", "Wait")):
+                self.Dialog[3].Hide()
+                self.Dialog[4].Show()
+            else:
+                self.Dialog[4].Hide()
+                self.Dialog[3].Show()
+            self.Dialog.Layout()
+
+    def SaveState(self):  # TODO
+        if self.state in ("Work", "Wait"):
+            return "Idle"
+        return self.state
+
+    def LoadState(self, state):  # TODO
+        try:
+            self.SetState(state)
+        except Exception as e:
+            print(e)
+
+    # -------------------------------------------------------- #
+    def Run(self):
+        if self.THREAD:
+            self.Thread = Thread(target=self.RunInThread)
+            self.Thread.start()
+        else:
+            self.RunDirectly()
+
+    def RunInThread(self):
+        try:
+            out = self.Task()
+            with self.Canvas.Lock:
+                if self.IsState("Work") and self.Thread == threading.currentThread():
+                    self["OUT"] = out
+                    if out is None:
+                        self.SetState("Fail")
+                        self.Record.LogFail("%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_FAIL"]))
+                    else:
+                        self.SetState("Done")
+                        self.Record.LogDone("%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_DONE"]))
+        except Interrupted:
+            pass
+        except Exception as e:
+            with self.Canvas.Lock:
+                if self.IsState("Work") and self.Thread == threading.currentThread():
+                    self.SetState("Fail")
+                    self.Record.LogFail("%s: %s" % (self.__class__.__name__, str(e)))
+        finally:
+            self.Thread = None
+
+    def RunDirectly(self):
+        try:
+            self["OUT"] = self.Task()
+            if self["OUT"] is None:
+                self.SetState("Fail")
+                self.Record.LogFail("%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_FAIL"]))
+            else:
+                self.SetState("Done")
+                self.Record.LogDone("%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_DONE"]))
+        except Exception as e:
+            self.SetState("Fail")
+            self.Record.LogFail("%s: %s" % (self.__class__.__name__, str(e)))
+
+    # -------------------------------------------------------- #
+    def OnLeaveIdle(self):
+        pass
+
+    def OnEnterIdle(self):
+        self.Bitmap = self.__RES__["CANVAS"]["IDLE"]
+        # self.UpdateData()
+
+    def OnLeaveWait(self):
+        if self.THREAD and self.Dialog:
+            self.Dialog[4].Hide()
+            self.Dialog[3].Show()
+            self.Dialog.Layout()
+
+    def OnEnterWait(self):
+        self.Bitmap = self.__RES__["CANVAS"]["WAIT"]
+        if self.THREAD and self.Dialog:
+            self.Dialog[3].Hide()
+            self.Dialog[4].Show()
+            self.Dialog.Layout()
+
+    def OnLeaveWork(self):
+        self.Canvas.WidgetRunning(False)
+        if self.THREAD and self.Dialog:
+            self.Dialog[4].Hide()
+            self.Dialog[3].Show()
+            self.Dialog.Layout()
+
+    def OnEnterWork(self):
+        self.Bitmap = self.__RES__["CANVAS"]["WORK"]
+        self.Canvas.WidgetRunning(True)
+        if self.THREAD and self.Dialog:
+            self.Dialog[3].Hide()
+            self.Dialog[4].Show()
+            self.Dialog.Layout()
+        self.Run()
+
+    def OnLeaveFail(self):
+        self.Reset()
+
+    def OnEnterFail(self):
+        self.Bitmap = self.__RES__["CANVAS"]["FAIL"]
+        self.UpdateDialog()
+        for w in self.GetOutgoingWidget():
+            if w.IsState("Wait"):
+                w.SetState("Fail")
+
+    def OnLeaveDone(self):
+        self.Reset()
+
+    def OnEnterDone(self):
+        self.Bitmap = self.__RES__["CANVAS"]["DONE"]
+        self.UpdateDialog()
+        for w in self.GetOutgoingWidget():
+            if w.IsState("Idle"):
+                w.UpdateData()
+            elif w.IsState("Fail"):
+                w.UpdateData()
+            elif w.IsState("Wait"):
+                w.UpdateData()
+                for v in w.GetIncomingWidget():
+                    if not v.IsState("Done"):
+                        break
+                else:
+                    w.SetState("Work")
+
+    # -------------------------------------------------------- #
+    def Task(self):
+        return False
 
     def Reset(self):
         pass

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from ..widget import Widget, Anchor, ANCHOR_ALL
-from ..widget.field import *
-from .anchor import *
+from ..widget import Widget, ANCHOR_ALL
+from .anchor import AnchorFCFS
 
 __all__ = [
     "Passer",
@@ -14,10 +13,7 @@ __all__ = [
 # ======================================================= Widget =======================================================
 class Passer(Widget):
     NAME = "Passer"
-    DIALOG = None
-    THREAD = False
-    INTERNAL = None
-    INCOMING = ANCHOR_ALL, "DATA", False, "L", "Data to Pass", AnchorFCFS
+    INCOMING = ANCHOR_ALL, "DATA", False, "LTBR", "Data to pass", AnchorFCFS
     OUTGOING = ANCHOR_ALL, "", AnchorFCFS
 
     def Task(self):
@@ -26,9 +22,6 @@ class Passer(Widget):
 
 class Condition(Widget):
     NAME = "Condition"
-    DIALOG = None
-    THREAD = False
-    INTERNAL = None
     INCOMING = (ANCHOR_ALL, "TEST", False, "L", "Condition to test"), \
                (ANCHOR_ALL, "VALUE_T", False, "T", "Data passed if condition true ", AnchorFCFS), \
                (ANCHOR_ALL, "VALUE_F", False, "B", "Data passed if condition false", AnchorFCFS)
@@ -44,19 +37,16 @@ class Condition(Widget):
 
 class Wait(Widget):
     NAME = "Wait"
-    DIALOG = None
-    THREAD = False
-    INTERNAL = None
-    INCOMING = (ANCHOR_ALL, "DATA", False, "L", "Data to Pass", AnchorFCFS), \
+    INCOMING = (ANCHOR_ALL, "DATA", False, "L", "Data to pass", AnchorFCFS), \
                (ANCHOR_ALL, "WAIT", True, "TB", "Tasks to wait")
     OUTGOING = ANCHOR_ALL, "", AnchorFCFS
 
     def Name(self):
-        if self.IsWaiting():
+        if self.IsState("Wait"):
             return "Waiting"
-        if self.IsDone():
+        if self.IsState("Done"):
             return "Pass"
-        if self.IsFailed():
+        if self.IsState("Fail"):
             return "Failed"
 
     def Task(self):

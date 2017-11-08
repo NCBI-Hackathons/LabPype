@@ -1,31 +1,33 @@
 # -*- coding: utf-8 -*-
 
-
 import wx
 import DynaUI as UI
 
-SizerFlagsTitle = wx.SizerFlags().Expand().Border(wx.TOP, 2)
-SizerFlagsPanel = wx.SizerFlags().Expand().Border(wx.BOTTOM, 6)
+SF_TITLE = wx.SizerFlags().Expand().Border(wx.TOP, 2)
+SF_PANEL = wx.SizerFlags().Expand().Border(wx.BOTTOM, 6)
 
 
 # ======================================================= Gadget =======================================================
 class Gadget(UI.Scrolled):
     def __init__(self, parent, size):
         super().__init__(parent, size=size, edge="H")
+        self.MainFrame = parent
+        self.M = parent.M
+        self.M.Gadget = self
         self.AddScrollBar((0, 12))
         self.Tool = UI.Tool(self, size=wx.Size(-1, 26), itemSize=wx.Size(24, 24), bg="D", edge="EM")
         self.Tool.SizerFlags1 = wx.SizerFlags().Expand().Border(wx.TOP | wx.BOTTOM, 1)
         self.Tool.SizerFlags2 = wx.SizerFlags().Center().Border(wx.TOP | wx.BOTTOM, 1)
         self.Tool.AddItems(1,
-                           ("T", "TOOL_T_SHOW", self.OnGroup, {"toggle": True}),
-                           ("T", "TOOL_T_TEXT", self.OnLabel, {"toggle": True}), "|", "|",
-                           ("N", "TOOL_MANAGE", (parent.OnDialog, "M", "MANAGE")),
+                           ("T", "TOOL_T_SHOW", self.OnGroup, {"toggle": self.S["TOGGLE_GADGET_GROUP"]}),
+                           ("T", "TOOL_T_TEXT", self.OnLabel, {"toggle": self.S["TOGGLE_GADGET_LABEL"]}), "|", "|",
+                           ("N", "TOOL_MANAGE", (parent.OnDialog, "MANAGE", "MANAGE")),
                            1)
         self.Tool["GADGET_SEARCH"] = UI.Text(self.Tool, size=wx.Size(-1, 20), style=wx.BORDER_NONE)
         self.Tool["GADGET_SEARCH"].Bind(wx.EVT_TEXT, self.OnSearch)
-        self.Tool["GADGET_SEARCH"].Bind(wx.EVT_ENTER_WINDOW, lambda evt: self.GetParent().SetStatus(self.L["GADGET_SEARCH"]))
+        self.Tool["GADGET_SEARCH"].Bind(wx.EVT_ENTER_WINDOW, lambda evt: self.MainFrame.SetStatus(self.L["GADGET_SEARCH"]))
         self.Tool["GADGET_CANCEL"] = UI.Button(self.Tool, size=wx.Size(24, 24), tag="x", edge=None, func=self.OnCancel)
-        self.Tool["GADGET_CANCEL"].SetTip(self.GetParent().SetStatus, self.L["GADGET_CANCEL"])
+        self.Tool["GADGET_CANCEL"].SetTip(self.MainFrame.SetStatus, self.L["GADGET_CANCEL"])
         self.Tool.GetSizer().Insert(4, self.Tool["GADGET_CANCEL"], self.Tool.SizerFlags2)
         self.Tool.GetSizer().Insert(4, self.Tool["GADGET_SEARCH"], 1, wx.ALIGN_BOTTOM | wx.TOP | wx.BOTTOM, 1)
         self.Outer = wx.Panel(self)
@@ -42,9 +44,7 @@ class Gadget(UI.Scrolled):
         Sizer.Add(UI.SETTINGS["SCROLL_DIAMETER"], 4)
         self.SetSizer(Sizer)
 
-        self.Groups = {}
-        self.showGroup = True
-        self.showLabel = True
+        self.Groups = {}  # {"TITLE": title, "PANEL": panel, "SHOW": True, "ITEMS": [gadgetItem, ...]}
 
     # --------------------------------------
     def SetActualSize(self):
@@ -64,29 +64,55 @@ class Gadget(UI.Scrolled):
 
     # --------------------------------------
     def AddItems(self, args):
-        setStatus = self.GetParent().SetStatus
+        itemSize = wx.Size(108, 36) if self.S["TOGGLE_GADGET_LABEL"] else wx.Size(36, 36)
+        prefix = " ■ " if self.S["TOGGLE_GADGET_GROUP"] else " □ "
         sizer = self.Inner.GetSizer()
         group = self.L["GROUP_NONE"]
         groupSizer = None
         self.Freeze()
         for arg in args:
-            if isinstance(arg, (tuple, list)):
-                item = GadgetItem(self.Groups[group]["PANEL"], item=arg[1])
-                item.SetTip(setStatus, arg[1].NAME)
-                groupSizer.Add(item)
-                self.Groups[group]["ITEMS"].append(item)
-            else:
-                group = self.L.Get(arg, "WIDGET_GROUP_") or self.L["GROUP_NONE"]
+            if isinstance(arg, str):
+                group = arg or self.L["GROUP_NONE"]
                 if group in self.Groups:
                     groupSizer = self.Groups[group]["PANEL"].GetSizer()
                 else:
                     groupSizer = wx.WrapSizer()
-                    title = UI.Button(self.Inner, size=(-1, 20), tag=(" ■ " + group, "L"), func=(self.OnGroup, group))
-                    title.SetTip(setStatus, group)
+                    title = UI.Button(self.Inner, size=wx.Size(-1, 20), tag=(prefix + group, "L"), func=(self.OnGroup, group))
+                    title.SetTip(self.MainFrame.SetStatus, group)
                     panel = UI.BaseControl(self.Inner)
                     panel.SetSizer(groupSizer)
-                    sizer.AddMany(((title, SizerFlagsTitle), (panel, SizerFlagsPanel)))
-                    self.Groups[group] = {"TITLE": title, "PANEL": panel, "SHOW": True, "ITEMS": []}
+                    panel.Show(self.S["TOGGLE_GADGET_GROUP"])
+                    sizer.AddMany(((title, SF_TITLE), (panel, SF_PANEL)))
+                    self.Groups[group] = {"TITLE": title, "PANEL": panel, "SHOW": self.S["TOGGLE_GADGET_GROUP"], "ITEMS": []}
+            else:
+                item = GadgetItem(self.Groups[group]["PANEL"], item=arg, size=itemSize)
+                item.SetTip(self.MainFrame.SetStatus, arg.NAME)
+                groupSizer.Add(item)
+                self.Groups[group]["ITEMS"].append(item)
+        self.Inner.Layout()
+        self.OnSize()
+        self.Thaw()
+
+    def DelItems(self, args):
+        self.Freeze()
+        for arg in args:
+            if not isinstance(arg, str):
+                if arg in self.M.Groups:
+                    group = self.L["GROUP_NONE"]
+                    for i in range(self.M.Groups.index(arg), -1, -1):
+                        if isinstance(self.M.Groups[i], str):
+                            group = self.M.Groups[i]
+                            break
+                    item = [i for i in self.Groups[group]["ITEMS"] if i.Item is arg][0]
+                    item.Destroy()
+                    self.Groups[group]["ITEMS"].remove(item)
+        for arg in args:
+            if isinstance(arg, str):
+                if arg in self.Groups:
+                    if not self.Groups[arg]["ITEMS"]:
+                        self.Groups[arg]["TITLE"].Destroy()
+                        self.Groups[arg]["PANEL"].Destroy()
+                        del self.Groups[arg]
         self.Inner.Layout()
         self.OnSize()
         self.Thaw()
@@ -95,10 +121,6 @@ class Gadget(UI.Scrolled):
         self.Inner.DestroyChildren()
         self.Groups = {}
         self.Tool["GADGET_SEARCH"].ChangeValue("")
-        if not self.showGroup:
-            self.Tool["GADGET_GROUP"].Click()
-        if not self.showLabel:
-            self.Tool["GADGET_LABEL"].Click()
 
     # --------------------------------------
     def OnSearch(self, evt):
@@ -116,7 +138,7 @@ class Gadget(UI.Scrolled):
             for group in self.Groups:
                 for item in self.Groups[group]["ITEMS"]:
                     item.Show(True)
-                self.DoToggleGroup(group, self.showGroup)
+                self.DoToggleGroup(group, self.S["TOGGLE_GADGET_GROUP"])
         self.Inner.Layout()
         self.SetActualSize()
         self.Thaw()
@@ -127,9 +149,9 @@ class Gadget(UI.Scrolled):
     def OnGroup(self, group=None):
         self.Freeze()
         if group is None:
-            self.showGroup = not self.showGroup
+            self.S["TOGGLE_GADGET_GROUP"] = not self.S["TOGGLE_GADGET_GROUP"]
             for group in self.Groups:
-                self.DoToggleGroup(group, self.showGroup)
+                self.DoToggleGroup(group, self.S["TOGGLE_GADGET_GROUP"])
         else:
             self.DoToggleGroup(group, not self.Groups[group]["SHOW"])
         self.Inner.Layout()
@@ -142,8 +164,8 @@ class Gadget(UI.Scrolled):
         self.Groups[group]["TITLE"].SetTag((" □ ", " ■ ")[show] + group)
 
     def OnLabel(self):
-        self.showLabel = not self.showLabel
-        size = (108 if self.showLabel else 36, 36)
+        self.S["TOGGLE_GADGET_LABEL"] = not self.S["TOGGLE_GADGET_LABEL"]
+        size = (108 if self.S["TOGGLE_GADGET_LABEL"] else 36, 36)
         self.Freeze()
         for group in self.Groups:
             for item in self.Groups[group]["ITEMS"]:
@@ -155,8 +177,8 @@ class Gadget(UI.Scrolled):
 
 # ===================================================== GadgetItem =====================================================
 class GadgetItem(UI.Button):
-    def __init__(self, parent, item):
-        super().__init__(parent, size=wx.Size(108, 36), tag=("\n".join(item.NAME.split()), "L", 38), pic=(parent.R["WIDGET_BUTTON"][item.KEY], "L", 2), res="L", edge=None)
+    def __init__(self, parent, item, size):
+        super().__init__(parent, size=size, tag=("\n".join(item.NAME.split()), "L", 38), pic=(item.__RES__["BUTTON"], "L", 2), res="L", edge=None)
         self.Item = item
         self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouse)
         self.Canvas = self.GetTopLevelParent().Canvas
@@ -178,7 +200,7 @@ class GadgetItem(UI.Button):
             self.Canvas.AddWidget(self.Item)
         elif evtType == wx.wxEVT_MOTION and self.leftDown:
             self.leftDown = False
-            self.SetCursor(self.R["WIDGET_CURSOR"][self.Item.KEY])
+            self.SetCursor(self.Item.__RES__["CURSOR"])
         evt.Skip()
 
     def OnCaptureLost(self, evt):

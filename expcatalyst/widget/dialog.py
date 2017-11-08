@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
 import wx
 import DynaUI as UI
 from .field import *
@@ -97,8 +96,8 @@ def MakeWidgetDialog(widget):
                           style=wx.FRAME_FLOAT_ON_PARENT,
                           main=(widget.DIALOG, {"widget": widget}),
                           head=DetachedHead)
-    Frame.SetSize(widget.dialogSize or Frame.GetEffectiveMinSize())
-    Frame.SetPosition(widget.dialogPos or UI.EnsureWindowInScreen(widget.Canvas.ClientToScreen(widget.GetPosition() + wx.Point(64, 0)), Frame.GetSize()))
+    Frame.SetSize(widget.DialogSize or Frame.GetEffectiveMinSize())
+    Frame.SetPosition(widget.DialogPos or UI.EnsureWindowInScreen(widget.Canvas.ClientToScreen(widget.GetPosition() + wx.Point(64, 0)), Frame.GetSize()))
     Frame.Main.GetData()
     Frame.Play("FADEIN")
     return Frame.Main
@@ -254,10 +253,10 @@ class Dialog(UI.BaseMain):
 
     # --------------------------------------
     def OnClose(self):  # Key = 0
-        self.Widget.dialogSize = self.Frame.GetSize()
-        self.Widget.dialogPos = self.Frame.GetPosition()
+        self.Widget.DialogSize = self.Frame.GetSize()
+        self.Widget.DialogPos = self.Frame.GetPosition()
         if self.Frame.minimized:
-            self.Widget.dialogSize[1] = self.Frame.minimized
+            self.Widget.DialogSize[1] = self.Frame.minimized
         self.Widget.Dialog = None
         self.Widget.Canvas.ReDraw()
         if self.detached:
@@ -275,29 +274,26 @@ class Dialog(UI.BaseMain):
         if self.AUTO:
             self.AutoSetData()
         self.SetData()
-        self.Widget.OnSetInternal()
+        self.Widget.OnAlter()
         self.Widget.Canvas.ReDraw()
 
     def OnBegin(self):  # Key = 3
-        if self.AUTO:
-            ok = self.AutoSetData()
-        else:
-            ok = True
+        ok = self.AutoSetData() if self.AUTO else True
         self.SetData()
-        self.Widget.OnSetInternal()
-        self.Widget.OnStart()
+        self.Widget.OnAlter()
+        self.Widget.OnBegin()
         self.Widget.Canvas.ReDraw()
         return ok
 
     def OnAbort(self):  # Key = 4
-        self.Widget.OnSetInternal()
+        self.Widget.OnAlter()
 
     # --------------------------------------
     def AddStdButton(self, sizer):
         self[0] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_CROSS"], edge="D", func=self.OnClose)
         if self.Widget.THREAD:
             self[3] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_BEGIN"], edge="D", func=self.OnBegin)
-            self[4] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_PAUSE"], edge="D", func=self.OnAbort)
+            self[4] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_ABORT"], edge="D", func=self.OnAbort)
         else:
             self[1] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_CHECK"], edge="D", func=self.OnReady)
         if self.Widget.INTERNAL or self.Widget.INCOMING:

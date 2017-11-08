@@ -1,34 +1,19 @@
 # -*- coding: utf-8 -*-
 
-from ..utility import Here
-
+from ..utility import Find
 from .anchor import *
 from .flowcontrol import *
-from .number import *
-from .text import *
-# from .ssh import *
-
-Number = [
-    "Number",
-    ("#55aaff", Number, Here("icon", "Number.png")),
-    ("#55aaff", RandomInt, Here("icon", "RandomNumber.png")),
-]
-
-Text = [
-    "Text",
-    ("#ffaa55", Line,),
-    ("#ffaa55", Text,),
-]
+from .operation import *
 
 FlowControl = [
     "Flow Control",
-    ("#ffffff", Passer, Here("icon", "Passer.png")),
-    ("#ffffff", Condition, Here("icon", "Condition.png")),
+    ("#ffffff", Passer, Find("builtin/icon", "Passer.png")),
+    ("#ffffff", Condition, Find("builtin/icon", "Condition.png")),
     ("#ffffff", Wait,),
 ]
 
-# SSH = [
-#     "SSH",
-#     ("#99e5cf", SSHClient,),
-#     ("#99e5cf", SSHShell,),
-# ]
+Operation = [
+    "General Operation",
+    ("#c0ffff", Merge,),
+    ("#c0ffff", Filter,),
+]

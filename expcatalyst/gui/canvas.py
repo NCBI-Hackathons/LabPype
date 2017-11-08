@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 
-
 import wx
-import time
+import threading
 import DynaUI as UI
 from .. import utility as Ut
-
-from ..widget import Widget
-from ..widget import Anchor
+from ..widget import BaseWidget, Anchor
 
 MOCK_RECT = wx.Rect(0, 0, 0, 0)
 
@@ -19,8 +16,8 @@ class Canvas(UI.BaseControl):
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouse)
         self.NewAnimation("LOCATE", 50, self.ToggleSelect, (), False)  # TODO
-        self.NewTimer("__", self.ReDraw)
-        self.NewTimer("___", self.ReDrawHidden)
+        self.NewTimer("_WIDGET_UPDATE_", lambda: self.ReDraw() if self.widgetRunning else None)
+        self.NewTimer("_HIDDEN_BITMAP_", self.ReDrawHidden)
         self.SetStatus = parent.SetStatus
         if self.S["TOGGLE_CURV"]:
             self.DrawLink1 = DrawCurve
@@ -40,15 +37,15 @@ class Canvas(UI.BaseControl):
         self.SelectedLink = None
         self.TempLink = None
 
-        self.timeLastDraw = 0
-        self.timeLastBlink = 0
-        self.colorLastBlink = 0
-        self.widgetBlinking = 0
+        self.widgetRunning = 0
         self.hiddenBitmap = None
         self.hiddenImage = None
 
+        self.Lock = threading.RLock()
         self.Widget = []
         self.Link = {}
+
+        self.StartTimer("_WIDGET_UPDATE_", 500, wx.TIMER_CONTINUOUS)
 
     def OnSize(self, evt):
         w, h = evt.GetSize()
@@ -135,13 +132,9 @@ class Canvas(UI.BaseControl):
 
     def WidgetRunning(self, running):
         if running:
-            self.widgetBlinking += 1
-            if self.widgetBlinking == 1:
-                self.StartTimer("__", 100, wx.TIMER_CONTINUOUS)
+            self.widgetRunning += 1
         else:
-            self.widgetBlinking -= 1
-            if self.widgetBlinking == 0:
-                self.StopTimer("__")
+            self.widgetRunning -= 1
 
     # ----------------------------------------------
     def AppendLink(self, source, target):
@@ -189,7 +182,7 @@ class Canvas(UI.BaseControl):
         else:
             self.SelectedWidget.append(w)
 
-    def SelectAll(self, evt=None):
+    def SelectAll(self):
         self.SelectedWidget = self.Widget[::]
         self.ReDraw()
 
@@ -264,16 +257,18 @@ class Canvas(UI.BaseControl):
             else:
                 self.SelectedLink = None
         if self.Clicked:
-            if isinstance(self.Clicked, Widget):
+            if isinstance(self.Clicked, BaseWidget):
                 if evtType == wx.wxEVT_LEFT_DOWN:
                     self.OnSelect(self.Clicked)
                 elif evtType == wx.wxEVT_LEFT_DCLICK:
                     if evtShift:
-                        self.Clicked.OnStart()
+                        self.Clicked.OnAlter()
+                        self.Clicked.OnBegin()
                     elif self.Clicked.DIALOG:
                         self.Clicked.OnActivation()
                     else:
-                        self.Clicked.OnStart()
+                        self.Clicked.OnAlter()
+                        self.Clicked.OnBegin()
                 elif evtType == wx.wxEVT_MOTION:
                     for w in self.SelectedWidget:
                         w.RePosition(*(evtPos - self.leftPos))
@@ -291,7 +286,7 @@ class Canvas(UI.BaseControl):
                 w.SavePosition()
 
     def HandleMouseMiddle(self, evtType, evtPos):
-        if isinstance(self.Hovered, Widget):
+        if isinstance(self.Hovered, BaseWidget):
             if evtType == wx.wxEVT_MIDDLE_DOWN:
                 self.OnSelect(self.Hovered)
                 for w in self.Hovered.GetLinkedWidget():
@@ -314,7 +309,7 @@ class Canvas(UI.BaseControl):
     def HandleMouseRight(self, evtType, evtPos):
         if evtType == wx.wxEVT_RIGHT_DOWN or evtType == wx.wxEVT_RIGHT_DCLICK:
             self.SelectedLink = None
-            if isinstance(self.Hovered, Widget):
+            if isinstance(self.Hovered, BaseWidget):
                 self.OnSelect(self.Hovered, not self.Hovered in self.SelectedWidget)
             self.rightPos = evtPos
         elif evtType == wx.wxEVT_RIGHT_UP:
@@ -324,7 +319,7 @@ class Canvas(UI.BaseControl):
         newObj = self.GetHovered(evtPos)
         if self.Hovered != newObj:
             self.Hovered = newObj
-            if isinstance(newObj, Widget):
+            if isinstance(newObj, BaseWidget):
                 self.SetStatus(newObj.name)
             elif isinstance(newObj, Anchor):
                 self.SetStatus(newObj.GetName())
@@ -367,7 +362,7 @@ class Canvas(UI.BaseControl):
             self.DrawLink(gc, self.SelectedLink)
 
         # Layer 2 - Hover
-        if isinstance(self.Hovered, Widget):
+        if isinstance(self.Hovered, BaseWidget):
             dc.DrawRectangle(self.Hovered.rect)
         elif isinstance(self.Hovered, Anchor):
             dc.DrawRectangle(self.Hovered.rect)
@@ -424,12 +419,7 @@ class Canvas(UI.BaseControl):
         dc.DrawLines(self.borderPoints)
 
         # Finish
-        self.timeLastDraw = time.time()
-        if self.timeLastDraw > self.timeLastBlink + 0.2:
-            self.timeLastBlink = self.timeLastDraw
-            self.colorLastBlink = not self.colorLastBlink
-
-        self.StartTimer("___", 100, wx.TIMER_ONE_SHOT)
+        self.StartTimer("_HIDDEN_BITMAP_", 100, wx.TIMER_ONE_SHOT)
 
     def ReDrawHidden(self):
         mdc = wx.MemoryDC()

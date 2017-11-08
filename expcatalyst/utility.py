@@ -1,43 +1,38 @@
 # -*- coding: utf-8 -*-
 
-
 import os
 
-MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
-Here = lambda path="", f="": os.path.join(os.path.join(MAIN_PATH, path), f)
-
-
-def avg(data):
-    return sum(data) / len(data)
+PACKAGE_PATH = os.path.dirname(os.path.realpath(__file__))
+Find = lambda path="", f="": os.path.join(os.path.join(PACKAGE_PATH, path), f)
 
 
 def AlignT(posList):
-    v = min([y for x, y in posList])
+    v = min(y for x, y in posList)
     return [(x, v) for x, y in posList]
 
 
 def AlignH(posList):
-    v = avg([y for x, y in posList])
+    v = sum(y for x, y in posList) / len(posList)
     return [(x, v) for x, y in posList]
 
 
 def AlignB(posList):
-    v = max([y for x, y in posList])
+    v = max(y for x, y in posList)
     return [(x, v) for x, y in posList]
 
 
 def AlignL(posList):
-    h = min([x for x, y in posList])
+    h = min(x for x, y in posList)
     return [(h, y) for x, y in posList]
 
 
 def AlignV(posList):
-    h = avg([x for x, y in posList])
+    h = sum(x for x, y in posList) / len(posList)
     return [(h, y) for x, y in posList]
 
 
 def AlignR(posList):
-    h = max([x for x, y in posList])
+    h = max(x for x, y in posList)
     return [(h, y) for x, y in posList]
 
 

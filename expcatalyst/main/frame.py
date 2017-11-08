@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
-
 import wx
 import json
 import zipfile
 import DynaUI as UI
-from . import utility as Ut
-from .gui.canvas import Canvas
-from .gui.gadget import Gadget
-from .gui.harbor import Harbor
-from .gui.manage import Manage
-from .gui.dialog import ShowSimpleText, MakeDialog, NewConfirm, SaveDialog, LoadDialog
+from .. import utility as Ut
+from ..gui.canvas import Canvas
+from ..gui.record import Record
+from ..gui.gadget import Gadget
+from ..gui.harbor import Harbor
+from ..gui.manage import Manage
+from ..gui.dialog import ShowSimpleText, MakeDialog, NewConfirm, SaveDialog, LoadDialog
 
 __all__ = ["MainFrame"]
 
@@ -19,22 +19,25 @@ class MainFrame(wx.Frame):
     DIALOGS = {
         "MANAGE"     : Manage,
         "SIMPLE_TEXT": ShowSimpleText,
+        "MAKE_DIALOG": MakeDialog,
     }
 
-    def __init__(self, r, s, l, widgetList):
+    def __init__(self, r, s, l, m):
         super().__init__(parent=None, title=l["TITLE"], pos=s["LAST_POS"], size=s["LAST_SIZE"], style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE)
         self.R = r
         self.S = s
         self.L = l
-        self.Dialogs = {}
+        self.M = m
+        self.M.R = self.R
+        self.M.L = self.L
         self.T = {"LAST_FILE": "", }
+        self.Dialogs = {}
 
         self.SetStatus = UI.DoNothing
         self.SetDoubleBuffered(True)
         self.SetMinSize(wx.Size(800, 600))
         self.SetIcon(self.R["ICON"])
         self.SetFont(self.R["FONT_N"])
-        self.SetBackgroundColour(self.R["COLOR_EDGE_D"])
         self.Bind(wx.EVT_CLOSE, self.OnClose)
         if self.S["MAXIMIZED"]:
             self.Maximize()
@@ -43,10 +46,12 @@ class MainFrame(wx.Frame):
         self.Info = UI.Info(self, edge=("T", ""))
         self.Gadget = Gadget(self, size=wx.Size(self.S["WIDTH_GADGET"], -1))
         self.Canvas = Canvas(self)
+        self.Record = Record(self, size=wx.Size(-1, self.S["HEIGHT_RECORD"]))
         self.Harbor = Harbor(self, size=wx.Size(self.S["WIDTH_HARBOR"], -1))
 
-        self.SashL = UI.Sash(self, target=self.Gadget, direction="L", vRange=(132, 456), edge=("T", "RB"))
-        self.SashR = UI.Sash(self, target=self.Harbor, direction="R", vRange=(132, 456), edge=("T", "LB"))
+        self.SashC = UI.Sash(self, target=self.Record, direction="B", vRange=(0, 250), edge=("", "T"), res="L")
+        self.SashL = UI.Sash(self, target=self.Gadget, direction="L", vRange=(0, 350), edge=("T", "RB"))
+        self.SashR = UI.Sash(self, target=self.Harbor, direction="R", vRange=(0, 600), edge=("T", "LB"))
         self.HiderL = UI.Hider(self, targets=(self.Gadget, self.SashL))
         self.HiderR = UI.Hider(self, targets=(self.Harbor, self.SashR))
         self.HiderL.SetTip(self.SetStatus, self.L["HIDER_GADGET"])
@@ -55,13 +60,14 @@ class MainFrame(wx.Frame):
         self.AcceleratorEntries = []
         for flags, keyCode, func in (
                 (wx.ACCEL_NORMAL, wx.WXK_F3, self.HiderL.Click),
-                (wx.ACCEL_NORMAL, wx.WXK_F4, self.HiderR.Click),
+                (wx.ACCEL_NORMAL, wx.WXK_F4, lambda evt: self.Record.Minimize()),
+                (wx.ACCEL_NORMAL, wx.WXK_F5, self.HiderR.Click),
                 (wx.ACCEL_CTRL, ord("F"), lambda evt: self.Gadget.Tool["GADGET_SEARCH"].SetFocus()),
                 (wx.ACCEL_CTRL, ord("D"), self.Gadget.Tool["GADGET_CANCEL"].Click),
                 (wx.ACCEL_CTRL, ord("E"), self.Gadget.Tool["TOOL_T_SHOW"].Click),
                 (wx.ACCEL_CTRL, ord("R"), self.Gadget.Tool["TOOL_T_TEXT"].Click),
                 (wx.ACCEL_CTRL, ord("W"), self.Gadget.Tool["TOOL_MANAGE"].Click),
-                (wx.ACCEL_CTRL, ord("A"), self.Canvas.SelectAll),
+                (wx.ACCEL_CTRL, ord("A"), lambda evt: self.Canvas.SelectAll()),
         ):
             cmd = wx.NewId()
             self.Bind(wx.EVT_MENU, func, id=cmd)
@@ -74,10 +80,10 @@ class MainFrame(wx.Frame):
             ("N", "TOOL_FILE_O", (self.OnDialog, "L", MakeDialog, self.L["DIALOG_HEAD_LOAD"], LoadDialog, {"buttons": False}), wx.ACCEL_CTRL, ord("O")),
             ("N", "TOOL_FILE_S", (self.OnDialog, "S", MakeDialog, self.L["DIALOG_HEAD_SAVE"], SaveDialog, {"buttons": False}), wx.ACCEL_CTRL, ord("S")),
             "|",
-            ("T", "TOOL_T_ANCR", (self.OnToggle, "TOGGLE_ANCR"), wx.ACCEL_NORMAL, wx.WXK_F5, {"toggle": self.S["TOGGLE_ANCR"]}),
-            ("T", "TOOL_T_NAME", (self.OnToggle, "TOGGLE_NAME"), wx.ACCEL_NORMAL, wx.WXK_F6, {"toggle": self.S["TOGGLE_NAME"]}),
-            ("T", "TOOL_T_SNAP", (self.OnToggle, "TOGGLE_SNAP"), wx.ACCEL_NORMAL, wx.WXK_F7, {"toggle": self.S["TOGGLE_SNAP"]}),
-            ("T", "TOOL_T_CURV", self.Canvas.ToggleLinkType, wx.ACCEL_NORMAL, wx.WXK_F8, {"toggle": self.S["TOGGLE_CURV"]}),
+            ("T", "TOOL_T_ANCR", (self.OnToggle, "TOGGLE_ANCR"), wx.ACCEL_NORMAL, wx.WXK_F6, {"toggle": self.S["TOGGLE_ANCR"]}),
+            ("T", "TOOL_T_NAME", (self.OnToggle, "TOGGLE_NAME"), wx.ACCEL_NORMAL, wx.WXK_F7, {"toggle": self.S["TOGGLE_NAME"]}),
+            ("T", "TOOL_T_SNAP", (self.OnToggle, "TOGGLE_SNAP"), wx.ACCEL_NORMAL, wx.WXK_F8, {"toggle": self.S["TOGGLE_SNAP"]}),
+            ("T", "TOOL_T_CURV", self.Canvas.ToggleLinkType, wx.ACCEL_NORMAL, wx.WXK_F9, {"toggle": self.S["TOGGLE_CURV"]}),
             ("T", "TOOL_T_DIAG", self.OnToggleDialogSize, wx.ACCEL_NORMAL, wx.WXK_F10, {"toggle": 0}),
             ("T", "TOOL_T_FSCN", self.OnToggleFullScreen, wx.ACCEL_NORMAL, wx.WXK_F11, {"toggle": 0}),
             "|",
@@ -105,12 +111,17 @@ class MainFrame(wx.Frame):
 
         self.SetAcceleratorTable(wx.AcceleratorTable(self.AcceleratorEntries))
 
+        MiddleSizer = wx.BoxSizer(wx.VERTICAL)
+        MiddleSizer.AddMany((
+            (self.Canvas, 1, wx.EXPAND),
+            (self.SashC, 0, wx.EXPAND),
+            (self.Record, 0, wx.EXPAND),))
         MainSizer = wx.BoxSizer(wx.HORIZONTAL)
         MainSizer.AddMany((
             (self.HiderL, 0, wx.EXPAND),
             (self.Gadget, 0, wx.EXPAND),
             (self.SashL, 0, wx.EXPAND),
-            (self.Canvas, 1, wx.EXPAND | wx.BOTTOM, 1),
+            (MiddleSizer, 1, wx.EXPAND),
             (self.SashR, 0, wx.EXPAND),
             (self.Harbor, 0, wx.EXPAND),
             (self.HiderR, 0, wx.EXPAND),))
@@ -130,16 +141,12 @@ class MainFrame(wx.Frame):
             self.SashR.Hide()
             self.HiderR.show = False
 
-        self.SetWidgetList(widgetList)
+        failed = self.M.Init()
+        if failed:
+            self.OnDialog("MSG_PKG_INIT_FAIL", "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MSG_PKG_INIT_FAIL"] % ",".join(failed))
+        self.Gadget.AddItems(self.M.Groups)
 
     # ======================================
-    def SetWidgetList(self, widgetList):
-        self.Gadget.ClearItems()
-        self.WidgetList = widgetList
-        self.WidgetDict = {i[1].__name__: i[1] for i in widgetList if not isinstance(i, str)}
-        self.R.DrawWidgets(widgetList)
-        self.Gadget.AddItems(widgetList)
-
     def OnToggle(self, key):
         self.S[key] = not self.S[key]
         self.Canvas.ReDraw()
@@ -170,7 +177,7 @@ class MainFrame(wx.Frame):
             self.Dialogs[key] = dialog(self, *args)
 
     def OnOption(self):
-        print("TODO")
+        pass  # TODO
 
     def OnNew(self):
         if self.Canvas.Widget:
@@ -180,11 +187,12 @@ class MainFrame(wx.Frame):
 
     def OnClear(self):
         self.Canvas.ClearWidget()
+        self.Record.ClearAll()
         self.T["LAST_FILE"] = ""
 
     # --------------------------------------
     def GetScheme(self):
-        return {w.Id: (w.__class__.__name__,
+        return {w.Id: (w.__ID__,
                        w.GetPosition(),
                        [a.Id for a in w.Anchors],
                        [i.Id for i in w.Outgoing[0].connected] if w.Outgoing else [],
@@ -195,7 +203,7 @@ class MainFrame(wx.Frame):
         widget = {}
         anchor = {}
         for wId in data:
-            widget[wId] = self.Canvas.AddWidget(self.WidgetDict[data[wId][0]], data[wId][1])
+            widget[wId] = self.Canvas.AddWidget(self.M.Widgets[data[wId][0]], data[wId][1])
             for index, aId in enumerate(data[wId][2]):
                 anchor[aId] = widget[wId].Anchors[index]
         for wId in data:
@@ -233,8 +241,12 @@ class MainFrame(wx.Frame):
                 if len(data) + (len(self.Canvas.Widget) if append else 0) > 255:
                     self.OnDialog("MSG_TOO_MANY_WIDGETS", "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MSG_TOO_MANY_WIDGETS"])
                     return False
+                for wId in data:
+                    if data[wId][0] not in self.M.Widgets:
+                        self.OnDialog("MSG_UNKNOWN_WIDGET", "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MSG_UNKNOWN_WIDGET"] % data[wId][0])
+                        return False
                 if not append:
-                    self.Canvas.ClearWidget()
+                    self.OnClear()
                 widget = self.SetScheme(data, setState=not schemeOnly)
                 if not schemeOnly:
                     for wId in z.namelist():
@@ -271,5 +283,7 @@ class MainFrame(wx.Frame):
         self.S["SHOW_HARBOR"] = self.Harbor.IsShown()
         self.S["WIDTH_GADGET"] = self.Gadget.GetSize()[0]
         self.S["WIDTH_HARBOR"] = self.Harbor.GetSize()[0]
+        self.S["HEIGHT_RECORD"] = self.Record.GetSize()[1]
         self.S.Save()
+        self.M.Save()
         evt.Skip()
