@@ -1,7 +1,7 @@
 # LabPype
-:point_right:[Link to examples](https://ncbi-hackathons.github.io/ExpCatalyst/):point_left:
+:point_right:[Link to examples](https://ncbi-hackathons.github.io/LabPype/):point_left:
 
-ExpCatalyst provides a solution for rapid development of pipeline and workflow management software. A visualized pipeline software provides features such as reusability of workflows, user-friendly interface, and highly integrated functionalities. ExpCatalyst accelerates the making of such software for developers. It also helps the scientists become the developers to meet their increasing and diverging needs.
+LabPype provides a solution for rapid development of pipeline and workflow management software. A visualized pipeline software provides features such as reusability of workflows, user-friendly interface, and highly integrated functionalities. LabPype accelerates the making of such software for developers. It also helps the scientists become the developers to meet their increasing and diverging needs.
 
 ## Dependencies
 * Python (>= 3.5)
@@ -24,10 +24,10 @@ A visualized pipeline software has many advantages:
 Users draw a workflow by adding and linking the widgets, and set input for the data widgets or the parameters for the task widgets using their dialogs. Then users can choose to run certain tasks manually, or just run the final task. Widgets will automatically trace back to determine what upstream tasks need to be done first. The results can be either displayed in the task widget’s dialog, or in specialized output widgets.
 
 #### Examples
-:point_right:[Link to examples](https://ncbi-hackathons.github.io/ExpCatalyst/):point_left:
+:point_right:[Link to examples](https://ncbi-hackathons.github.io/LabPype/):point_left:
 
 ## For developers
-ExpCatalyst tries to minimize the efforts of developers to make a widget-based pipeline software. It handles things such as GUI, resource management, workflow logic, etc., that are universal in pipeline software. It exposes two main base classes, "widget" and "dialog", to developers. The base widget class knows how to act in a workflow. Developers just need to subclass it, specify a few attributes, and implement the task it does. Each widget may have an associated dialog for interaction. The base dialog class has many APIs for easy creation of various UI elements.
+LabPype tries to minimize the efforts of developers to make a widget-based pipeline software. It handles things such as GUI, resource management, workflow logic, etc., that are universal in pipeline software. It exposes two main base classes, "widget" and "dialog", to developers. The base widget class knows how to act in a workflow. Developers just need to subclass it, specify a few attributes, and implement the task it does. Each widget may have an associated dialog for interaction. The base dialog class has many APIs for easy creation of various UI elements.
 
 #### How to make new widgets
 Let’s use summation of numbers as our toy example. The input widget’s data type is number, and the task widget simply sum all the numbers passed to it and display the result.
