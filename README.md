@@ -1,4 +1,4 @@
-# ExpCatalyst
+# LabPype
 :point_right:[Link to examples](https://ncbi-hackathons.github.io/ExpCatalyst/):point_left:
 
 ExpCatalyst provides a solution for rapid development of pipeline and workflow management software. A visualized pipeline software provides features such as reusability of workflows, user-friendly interface, and highly integrated functionalities. ExpCatalyst accelerates the making of such software for developers. It also helps the scientists become the developers to meet their increasing and diverging needs.
