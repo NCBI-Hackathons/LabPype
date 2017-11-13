@@ -5,7 +5,7 @@ from DynaUI import Locale
 __all__ = ["Locale"]
 
 Locale.DEFAULT = {
-    "TITLE"               : "ExpCatalyst",
+    "TITLE"               : "LabPype",
 
     "GROUP_NONE"          : "---- Not grouped ----",  # value is used as a key for widget group
     "GROUP_NEW"           : "New Group",

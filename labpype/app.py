@@ -16,7 +16,7 @@ __all__ = ["App"]
 class App(wx.App):
     def __init__(self, path=None):
         super().__init__(redirect=0, useBestVisual=True)
-        self.path = path or os.path.join(wx.GetHomeDir(), ".pineapple")  # TODO
+        self.path = path or os.path.join(wx.GetHomeDir(), ".labpype")
 
     def Start(self):
         m = Manager(self.path)

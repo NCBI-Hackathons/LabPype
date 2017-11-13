@@ -10,7 +10,7 @@ if __name__ == "__main__":
     path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..")
     if path not in sys.path:
         sys.path.append(path)
-    from expcatalyst.app import App
+    from labpype.app import App
 
     App().Start()
 else:
