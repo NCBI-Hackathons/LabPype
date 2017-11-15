@@ -237,7 +237,7 @@ class GroupTitle(UI.Button):
         self.group = group
         isNoGroup = group == parent.L["GROUP_NONE"]
         super().__init__(parent, size=wx.Size(-1, 20), tag=group, func=None if isNoGroup else self.ShowNameChange, edge="D")
-        # MiniFrame - Main - Outer - Inner - Title
+        # DialogFrame - Main - Outer - Inner - Title
         self.Main = parent.GetGrandParent()
         if not isNoGroup:
             self.Text = UI.Text(self, style=wx.TE_CENTER | wx.SIMPLE_BORDER)
@@ -402,7 +402,7 @@ class WidgetItem(UI.Button):
 # ======================================================= Manage =======================================================
 class Manage(UI.BaseDialog):
     def __init__(self, parent):
-        super().__init__(parent=parent, title=parent.L["MANAGE_TITLE"], size=wx.Size(720, 480), main=Main)
+        super().__init__(parent=parent, title=parent.L["MANAGE_TITLE"], size=wx.Size(720, 480), main=Main, style=wx.FRAME_NO_TASKBAR)
         self.Head.GetSizer().Insert(0,
                                     UI.ToolNormal(self.Head, size=UI.SETTINGS["DLG_HEAD_BTN"], pics=self.R["AP_HELP"],
                                                   func=(parent.OnDialog, "MANAGE_HELP", "SIMPLE_TEXT", self.L["MANAGE_HELP_HEAD"], self.L["MANAGE_HELP_TEXT"])),

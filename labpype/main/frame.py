@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import io
 import wx
 import json
 import zipfile
@@ -218,10 +219,10 @@ class MainFrame(wx.Frame):
         schemeOnly = fp.lower().endswith(".pas")
         try:
             with zipfile.ZipFile(fp, "w") as z:
-                z.writestr("_", json.dumps(self.GetScheme()))
+                z.writestr("_", json.dumps(self.GetScheme()))  # scheme -> str -> utf-8 -> b
                 if not schemeOnly:
                     for w in self.Canvas.Widget:
-                        z.writestr(str(w.Id), w.SaveData())
+                        z.writestr(str(w.Id), w.SaveData())  # widget.SaveData -> str or b, str -> utf-8 -> b, b -> b
                 for f in z.filelist:
                     f.create_system = 0
             self.NewHistory(fp)
@@ -237,7 +238,7 @@ class MainFrame(wx.Frame):
         try:
             with zipfile.ZipFile(fp, "r") as z:
                 with z.open("_") as f:
-                    data = json.load(f)
+                    data = json.load(io.TextIOWrapper(f, "utf-8"))  # b -> utf-8 -> str -> scheme
                 if len(data) + (len(self.Canvas.Widget) if append else 0) > 255:
                     self.OnDialog("MSG_TOO_MANY_WIDGETS", "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MSG_TOO_MANY_WIDGETS"])
                     return False
@@ -252,7 +253,7 @@ class MainFrame(wx.Frame):
                     for wId in z.namelist():
                         if wId != "_":
                             with z.open(wId) as f:
-                                widget[wId].LoadData(f)
+                                widget[wId].LoadData(f)  # b -> widget.LoadData
             self.NewHistory(fp)
             return True
         except Exception:

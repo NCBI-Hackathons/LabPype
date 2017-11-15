@@ -7,10 +7,10 @@ import DynaUI as UI
 
 # ======================================================= Maker ========================================================
 def ShowSimpleText(parent, title, text):
-    Dialog = UI.BaseDialog(parent, title=title, head={"buttons": False})
+    Dialog = UI.BaseDialog(parent, title=title, head={"buttons": False}, style=wx.FRAME_NO_TASKBAR)
     sizer = wx.BoxSizer(wx.VERTICAL)
     sizer.Add(wx.StaticText(Dialog.Main, label=text), 1, wx.EXPAND | wx.ALL, 8)
-    Dialog.Main.AddStdButton(sizer,onOK=Dialog.OnClose)
+    Dialog.Main.AddStdButton(sizer, onOK=Dialog.OnClose)
     Dialog.Main.SetSizer(sizer)
     x, y = Dialog.GetEffectiveMinSize()
     Dialog.SetSize((max(x, 120), max(y, UI.SETTINGS["DLG_HEAD"] + 10)))
@@ -21,7 +21,7 @@ def ShowSimpleText(parent, title, text):
 
 
 def MakeDialog(parent, title, main, head=None):
-    Dialog = UI.BaseDialog(parent=parent, title=title, main=main, head=head or {})
+    Dialog = UI.BaseDialog(parent=parent, title=title, main=main, head=head or {}, style=wx.FRAME_NO_TASKBAR)
     x, y = Dialog.GetEffectiveMinSize()
     Dialog.SetSize((max(x, 120), max(y, UI.SETTINGS["DLG_HEAD"] + 10)))
     Dialog.CenterOnParent()
@@ -108,8 +108,10 @@ class LoadDialog(UI.BaseMain):
         SubSizer2.Add(4, 4, 1)
         self.AddStdButton(SubSizer2, onOK=self.OnLoad, onCancel=self.Frame.OnClose)
         self.SetSizer(Sizer)
-        self["LB_S"].SetLineHeight(32)
-        self["LB_P"].SetLineHeight(32)
+        self["LB_S"].SetLineHeight()
+        self["LB_P"].SetLineHeight()
+        self["LB_S"].SetLineHeight(self["LB_S"].LineHeight * 2)
+        self["LB_P"].SetLineHeight(self["LB_P"].LineHeight * 2)
         self["MODE"][1].ChangeResources("R")
 
     def OnChooseFile(self):

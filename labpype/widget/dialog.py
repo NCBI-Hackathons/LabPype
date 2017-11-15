@@ -123,7 +123,7 @@ class Dialog(UI.BaseMain):
     LINE_HEIGHT = 20
 
     def __init__(self, parent, widget):
-        super().__init__(parent, size=self.SIZE or wx.DefaultSize)  # MainFrame - MiniFrame - Dialog
+        super().__init__(parent, size=self.SIZE or wx.DefaultSize)  # MainFrame - DialogFrame - Dialog
         self.Widget = widget
         self.Frame.OnClose = self.OnClose
         self.Harbor = self.GetGrandParent().Harbor

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import io
 import wx
 import math
 import json
@@ -351,7 +352,7 @@ class BaseWidget(Base):
         return json.dumps(self.Data)
 
     def Load(self, f):
-        return json.load(f)
+        return json.load(io.TextIOWrapper(f, "utf-8"))
 
     def Init(self):
         pass
