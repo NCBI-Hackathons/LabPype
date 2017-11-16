@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 AUTHOR = "Yadi Zhou"
-VERSION = "0.5"
 
 if __name__ == "__main__":
     import os
