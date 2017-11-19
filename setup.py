@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="LabPype",
-    version="0.5",
+    version="0.5.1",
     description="A Framework for Creating Pipeline Software",
     url="https://github.com/NCBI-Hackathons/LabPype",
     author="Yadi Zhou",
@@ -12,9 +12,11 @@ setup(
         "Development Status :: 3 - Alpha",
         "Environment :: Win32 (MS Windows)",
         "Environment :: X11 Applications :: GTK",
+        "Environment :: MacOS X :: Cocoa",
         "Operating System :: Microsoft :: Windows :: Windows 10",
         "Operating System :: Microsoft :: Windows :: Windows 7",
         "Operating System :: POSIX :: Linux",
+        "Operating System :: MacOS :: MacOS X",
         "Intended Audience :: Developers",
         "Intended Audience :: Education",
         "Intended Audience :: End Users/Desktop",

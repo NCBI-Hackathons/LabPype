@@ -206,8 +206,8 @@ class Main(UI.Scrolled):
         sizer = self.Inner.GetSizer()
         sizer.Detach(self.Groups[group]["TITLE"])
         sizer.Detach(self.Groups[group]["PANEL"])
-        self.Groups[group]["TITLE"].Destroy()
-        self.Groups[group]["PANEL"].Destroy()
+        self.Groups[group]["TITLE"].DestroyLater()
+        self.Groups[group]["PANEL"].DestroyLater()
         del self.Groups[group]
         self.OnArrangement()
 
@@ -240,7 +240,7 @@ class GroupTitle(UI.Button):
         # DialogFrame - Main - Outer - Inner - Title
         self.Main = parent.GetGrandParent()
         if not isNoGroup:
-            self.Text = UI.Text(self, style=wx.TE_CENTER | wx.SIMPLE_BORDER)
+            self.Text = UI.Text(self, style=wx.TE_CENTER | wx.SIMPLE_BORDER | wx.TE_PROCESS_ENTER)
             self.Text.SetMaxLength(24)
             self.Text.Hide()
             self.Text.Bind(wx.EVT_KILL_FOCUS, self.OnTextLost)

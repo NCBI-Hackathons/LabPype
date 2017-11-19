@@ -21,7 +21,6 @@ __all__ = [
 
 # ================================================== How to Subclass ===================================================
 #   Widget subclasses should have the following class properties:
-#       KEY       -  Class Identifier. By default KEY is id(WidgetClass). Normally user does not need to specify KEY.
 #       NAME      -  Default name of the widget, for display purpose.
 #       DIALOG    -  Associated Dialog class for interacting with the widget. Optional.
 #       THREAD    -  Whether the task should be done in a separate thread.
