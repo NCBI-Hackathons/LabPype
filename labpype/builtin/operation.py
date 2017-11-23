@@ -21,7 +21,7 @@ class Merge(Widget):
         out = []
         total = len(self["DATA"])
         for index, data in enumerate(self["DATA"]):
-            t.CheckPoint(index, total)
+            t.Checkpoint(index, total)
             if isinstance(data, (list, tuple)):
                 out.extend(data)
             else:
@@ -42,7 +42,7 @@ class Filter(Widget):
         rule = self["RULE"]
         total = len(self["DATA"])
         for index, data in enumerate(self["DATA"]):
-            t.CheckPoint(index, total)
+            t.Checkpoint(index, total)
             if rule(data):
                 out.append(data)
         return out

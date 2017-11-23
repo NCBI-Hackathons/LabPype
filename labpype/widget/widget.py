@@ -59,7 +59,7 @@ class Thread(threading.Thread):
         self.stop = False
         self.progress = ()
 
-    def CheckPoint(self, *args):
+    def Checkpoint(self, *args):
         if self.stop:
             raise Interrupted
         self.progress = args
@@ -287,6 +287,10 @@ class BaseWidget(Base):
 
     # -------------------------------------------------------- #
     def UpdateData(self):
+        self.UpdateIncoming()
+        self.UpdateOutgoing()
+
+    def UpdateIncoming(self):
         for a in self.Incoming:
             if a.connected:
                 if a.multiple:
@@ -295,6 +299,8 @@ class BaseWidget(Base):
                     self[a.key] = a.connected[0].Widget[a.connected[0].key]
             else:
                 self[a.key] = None
+
+    def UpdateOutgoing(self):
         for a in self.Outgoing:
             self[a.key] = None
 
@@ -322,7 +328,14 @@ class BaseWidget(Base):
             self.Thread = None
 
     def SaveData(self):
-        return self.Save()
+        data = {}
+        if self.OUTGOING:
+            data["OUT"] = self.Data["OUT"]
+        for key in self.INTERNAL:
+            if isinstance(key, BaseField):
+                key = key.key
+            data[key] = self.Data[key]
+        return self.Save(data)
 
     def LoadData(self, f):
         self.Data = self.Load(f)
@@ -347,8 +360,8 @@ class BaseWidget(Base):
     def Name(self):
         return self.NAME
 
-    def Save(self):
-        return json.dumps(self.Data)
+    def Save(self, data):
+        return json.dumps(data)
 
     def Load(self, f):
         return json.load(io.TextIOWrapper(f, "utf-8"))
@@ -429,19 +442,19 @@ class Widget(BaseWidget):
                     self["OUT"] = out
                     if out is None:
                         self.SetState("Fail")
-                        self.Record.LogFail("%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_FAIL"]))
+                        wx.CallAfter(self.Record.LogFail, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_FAIL"]))
                     else:
                         self.SetState("Done")
-                        self.Record.LogDone("%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_DONE"]))
+                        wx.CallAfter(self.Record.LogDone, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_DONE"]))
+                    self.Thread = None
         except Interrupted:
             pass
         except Exception as e:
             with self.Canvas.Lock:
                 if self.IsState("Work") and self.Thread == threading.currentThread():
                     self.SetState("Fail")
-                    self.Record.LogFail("%s: %s" % (self.__class__.__name__, str(e)))
-        finally:
-            self.Thread = None
+                    wx.CallAfter(self.Record.LogFail, "%s: %s" % (self.__class__.__name__, str(e)))
+                    self.Thread = None
 
     def RunDirectly(self):
         try:
@@ -462,7 +475,6 @@ class Widget(BaseWidget):
 
     def OnEnterIdle(self):
         self.Bitmap = self.__RES__["CANVAS"]["IDLE"]
-        # self.UpdateData()
 
     def OnLeaveWait(self):
         if self.THREAD and self.Dialog:
@@ -511,11 +523,11 @@ class Widget(BaseWidget):
         self.UpdateDialog()
         for w in self.GetOutgoingWidget():
             if w.IsState("Idle"):
-                w.UpdateData()
+                w.UpdateIncoming()
             elif w.IsState("Fail"):
-                w.UpdateData()
+                w.UpdateIncoming()
             elif w.IsState("Wait"):
-                w.UpdateData()
+                w.UpdateIncoming()
                 for v in w.GetIncomingWidget():
                     if not v.IsState("Done"):
                         break
@@ -524,7 +536,7 @@ class Widget(BaseWidget):
 
     # -------------------------------------------------------- #
     def Task(self):
-        return False
+        return
 
     def Reset(self):
         pass

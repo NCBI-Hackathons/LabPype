@@ -59,7 +59,7 @@ class SaveDialog(UI.BaseMain):
         self.MainFrame = self.GetGrandParent()
         Sizer = wx.BoxSizer(wx.VERTICAL)
         SubSizer = wx.BoxSizer(wx.HORIZONTAL)
-        self["FILE"] = self.AddFilePicker(Sizer, mode="S", value=self.MainFrame.T["LAST_FILE"], wildcard="All files (*.pa,*.pas)|*.pa;*.pas|Project files (*.pa)|*.pa|Scheme files (*.pas)|*.pas", onSelect=self.OnChooseFile)
+        self["FILE"] = self.AddPickerFile(Sizer, mode="S", value=self.MainFrame.T["LAST_FILE"], wildcard="All files (*.pa,*.pas)|*.pa;*.pas|Project files (*.pa)|*.pa|Scheme files (*.pas)|*.pas", onSelect=self.OnChooseFile)
         Sizer.Add(SubSizer, 1, wx.EXPAND)
         self["MODE"] = self.AddButtonBundle(SubSizer, tags=(self.L["DIALOG_SAVE_MODE_S"], self.L["DIALOG_SAVE_MODE_P"]), group="_SAVE_MODE_", width=100, toggled=self.MainFrame.T["LAST_FILE"].lower().endswith(".pa"), onClick=self.OnMode)
         SubSizer.Add(4, 4, 1)
@@ -99,7 +99,7 @@ class LoadDialog(UI.BaseMain):
                                        onClick=(self.OnRecent, "LB_S"), onDClick=(self.OnRecentGo, "LB_S"))
         self["LB_P"] = self.AddListBox(SubSizer1, label=self.L["DIALOG_LOAD_LIST_P"], choices=["\n".join(os.path.split(i)) for i in self.S["HISTORY_PROJECT"]], inline=False,
                                        onClick=(self.OnRecent, "LB_P"), onDClick=(self.OnRecentGo, "LB_P"))
-        self["FILE"] = self.AddFilePicker(Sizer, mode="L", onSelect=self.OnChooseFile, wildcard="All files (*.pa,*.pas)|*.pa;*.pas|Project files (*.pa)|*.pa|Scheme files (*.pas)|*.pas")
+        self["FILE"] = self.AddPickerFile(Sizer, mode="L", onSelect=self.OnChooseFile, wildcard="All files (*.pa,*.pas)|*.pa;*.pas|Project files (*.pa)|*.pa|Scheme files (*.pas)|*.pas")
         self.AddSeparator(Sizer)
         Sizer.Add(SubSizer2, 0, wx.EXPAND)
         self["MODE"] = self.AddButtonBundle(SubSizer2, tags=(self.L["DIALOG_LOAD_MODE_A"], self.L["DIALOG_LOAD_MODE_O"]), toggled=0, group="_OPEN_MODE_", width=80)

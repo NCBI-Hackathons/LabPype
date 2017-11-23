@@ -138,21 +138,22 @@ class Dialog(UI.BaseMain):
                 if isinstance(f, str):
                     continue
                 key = f.key
+                cls = f.__class__
                 label = self.L.Get(f.label, "WIDGET_DLG_")
                 if "hint" in f.kwargs:
                     f.kwargs["hint"] = self.L.Get(f.kwargs["hint"], "WIDGET_DLG_")
-                if isinstance(f, BooleanField):
+                if issubclass(cls, BooleanField):
                     tags = self.L.Get(f.tag1, "WIDGET_DLG_"), self.L.Get(f.tag2, "WIDGET_DLG_")
                     self.Auto[key] = self.AddButtonToggle(Sizer, label=label, tags=tags, toggle=self.GetDefaultData(key, 0), **f.kwargs).IsToggled
-                elif isinstance(f, IntegerField):
+                elif issubclass(cls, IntegerField):
                     self.Auto[key] = self.AddLineCtrl(Sizer, label=label, value=str(self.GetDefaultData(key, "")), **f.kwargs).GetValue
-                elif isinstance(f, FloatField):
+                elif issubclass(cls, FloatField):
                     self.Auto[key] = self.AddLineCtrl(Sizer, label=label, value=str(self.GetDefaultData(key, "")), **f.kwargs).GetValue
-                elif isinstance(f, LineField):
+                elif issubclass(cls, LineField):
                     self.Auto[key] = self.AddLineCtrl(Sizer, label=label, value=self.GetDefaultData(key, ""), **f.kwargs).GetValue
-                elif isinstance(f, TextField):
+                elif issubclass(cls, TextField):
                     self.Auto[key] = self.AddTextCtrl(Sizer, label=label, value=self.GetDefaultData(key, ""), **f.kwargs).GetValue
-                elif isinstance(f, ChoiceField):
+                elif issubclass(cls, ChoiceField):
                     choices = tuple(self.L.Get(i, "WIDGET_DLG_") if isinstance(i, str) else str(i) for i in f.choices)
                     selected = -1 if self.Widget[key] is None else f.choices.index(self.Widget[key])
                     if f.widget == "L":
@@ -161,8 +162,8 @@ class Dialog(UI.BaseMain):
                         self.Auto[key] = self.AddButtonBundle(Sizer, label=label, tags=choices, toggled=selected, group="_" + key, **f.kwargs).GetToggled
                     else:
                         self.Auto[key] = self.AddPickerValue(Sizer, label=label, choices=choices, selected=selected, **f.kwargs).GetSelection
-                elif isinstance(f, FileField):
-                    self.Auto[key] = self.AddFilePicker(Sizer, label=label, value=self.GetDefaultData(key, ""), **f.kwargs).GetValue
+                elif issubclass(cls, FileField):
+                    self.Auto[key] = self.AddPickerFile(Sizer, label=label, value=self.GetDefaultData(key, ""), **f.kwargs).GetValue
         self.Finalize(Sizer)
         self.SetSizer(Sizer)
 

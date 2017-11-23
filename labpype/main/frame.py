@@ -254,6 +254,8 @@ class MainFrame(wx.Frame):
                         if wId != "_":
                             with z.open(wId) as f:
                                 widget[wId].LoadData(f)  # b -> widget.LoadData
+                for wId in widget:
+                    widget[wId].UpdateIncoming()
             self.NewHistory(fp)
             return True
         except Exception:

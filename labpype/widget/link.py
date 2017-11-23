@@ -33,7 +33,7 @@ class _LegitLink(object):
         self.__dict__ = self._SharedState
         self.links = {}
 
-    def __call__(self, a1, a2):
+    def __call__(self, a1, a2): # TODO deal with subclass
         if issubclass(a1.aType, ANCHOR_SPECIAL) and issubclass(a2.aType, ANCHOR_SPECIAL):
             return False
         if a1.GetType() == ANCHOR_NONE or a2.GetType() == ANCHOR_NONE:
