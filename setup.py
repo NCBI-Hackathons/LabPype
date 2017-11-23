@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="LabPype",
-    version="0.5.1",
+    version="0.5.2",
     description="A Framework for Creating Pipeline Software",
     url="https://github.com/NCBI-Hackathons/LabPype",
     author="Yadi Zhou",
@@ -28,7 +28,7 @@ setup(
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
     ],
-    keywords=["Pipeline", "Workflow", "Widget", "Bioinformatics", "GUI"],
+    keywords="Pipeline Workflow Widget Bioinformatics GUI",
     packages=find_packages() + ["labpype.lang", "labpype.builtin.icon"],
     package_data={
         "labpype.builtin.icon": ["*.png"],

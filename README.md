@@ -1,7 +1,22 @@
 # LabPype
-:point_right:[Link to examples](https://ncbi-hackathons.github.io/LabPype/):point_left:
+
+* [Examples](https://ncbi-hackathons.github.io/LabPype/)
+* [Documentation](https://github.com/NCBI-Hackathons/LabPype/wiki)
+    * [How to install](https://github.com/NCBI-Hackathons/LabPype/wiki/How-to-install)
+    * [How to use](https://github.com/NCBI-Hackathons/LabPype/wiki/How-to-use)
+    * [How to develop](https://github.com/NCBI-Hackathons/LabPype/wiki/How-to-develop)
+    * [Class reference](https://github.com/NCBI-Hackathons/LabPype/wiki/Class-reference)
+
 
 LabPype provides a solution for rapid development of pipeline and workflow management software. A visualized pipeline software provides features such as reusability of workflows, user-friendly interface, and highly integrated functionalities. LabPype accelerates the making of such software for developers. It also helps the scientists become the developers to meet their increasing and diverging needs.
+
+To quickly get started, use pip to install LabPype:
+
+    pip install labpype
+
+Then, run LabPype:
+
+    python -m labpype.__init__
 
 ## Dependencies
 * Python (>= 3.5)
@@ -21,28 +36,34 @@ A visualized pipeline software has many advantages:
 * Sharable. Workflows can be shared.
 
 #### How to use
-Users draw a workflow by adding and linking the widgets, and set input for the data widgets or the parameters for the task widgets using their dialogs. Then users can choose to run certain tasks manually, or just run the final task. Widgets will automatically trace back to determine what upstream tasks need to be done first. The results can be either displayed in the task widget’s dialog, or in specialized output widgets.
+Users draw a workflow by adding and linking the widgets, and set input for the data widgets or the parameters for the task widgets using their dialogs. Then users can choose to run certain tasks manually, or just run the final task. Widgets will automatically trace back to determine what upstream tasks need to be done first. The results can be either displayed in the task widget's dialog, or in specialized output widgets.
 
 #### Examples
-:point_right:[Link to examples](https://ncbi-hackathons.github.io/LabPype/):point_left:
+:point_right:[Examples](https://ncbi-hackathons.github.io/LabPype/):point_left:
 
 ## For developers
 LabPype tries to minimize the efforts of developers to make a widget-based pipeline software. It handles things such as GUI, resource management, workflow logic, etc., that are universal in pipeline software. It exposes two main base classes, "widget" and "dialog", to developers. The base widget class knows how to act in a workflow. Developers just need to subclass it, specify a few attributes, and implement the task it does. Each widget may have an associated dialog for interaction. The base dialog class has many APIs for easy creation of various UI elements.
 
-#### How to make new widgets
-Let’s use summation of numbers as our toy example. The input widget’s data type is number, and the task widget simply sum all the numbers passed to it and display the result.
+* Subclassing of `Widget` and `Dialog` is simple and flexible.
+* Widget tasks can run in parallel using either multithreading or multiprocess.
+* Dialogs can be generated automatically, meaning no coding needed for the look and interaction of dialogs.
+* Builtin widgets are growing!
+* Builtin data fields are growing!
+* GUI is fully implemented and is ready to use. Color/font/image are customizable.
+* Software localization is as simple as editing a txt file.
 
-Code in `mywidget.py`:
+#### How to make new widgets
+Let's use summation of numbers as our toy example. The input widget's data type is number, and the task widget simply sum all the numbers passed to it and display the result. Here is the code for the two widgets.
+
+Code in `mywidgetpackage/mywidget.py`:
 ```python
 class ANCHOR_NUMBER(ANCHOR_REGULAR): pass
 class ANCHOR_NUMBERS(ANCHOR_REGULAR): pass
-LegitLink.Add(ANCHOR_NUMBER, ANCHOR_NUMBER, False)
-LegitLink.Add(ANCHOR_NUMBER, ANCHOR_NUMBERS, False)
 
 class Number(Widget):
     NAME = "Number"
-    DIALOG = mydialog.Number
-    INTERNAL = "NUMBER"
+    DIALOG = "V"
+    INTERNAL = FloatField(key="NUMBER", label="Number")
     OUTGOING = ANCHOR_NUMBER
 
     def Task(self):
@@ -51,7 +72,7 @@ class Number(Widget):
 class Summer(Widget):
     NAME = "Summer"
     INCOMING = ANCHOR_NUMBERS, "NUMBERS", True, "L"
-    OUTGOING = ANCHOR_NUMBER # The output can be the input for the next summer
+    OUTGOING = ANCHOR_NUMBER
 
     def Name(self):
         if self.IsDone():
@@ -60,28 +81,3 @@ class Summer(Widget):
     def Task(self):
         return sum(self["NUMBERS"])
 ```
-
-Code in `mydialog.py`:
-```python
-class Number(Dialog):
-    def Initialize(self, Sizer):
-        self.Number = self.AddLineCtrl(Sizer, label="Number", value="")
-
-    def SetData(self):
-        self.Widget["NUMBER"] = self.Number.GetValue()
-
-    def GetData(self):
-        if self.Widget["NUMBER"] is not None:
-            self.Number.SetValue(str(self.Widget["NUMBER"]))
-```
-
-#### Features
-* Subclassing of `Widget` and `Dialog` is simple and flexible. (see `demo` and `builtin`)
-* Widget tasks can run in parallel using either multithreading or multiprocess. (see `demo`)
-* Dialogs can be generated automatically, meaning no coding needed for the look and interaction of dialogs.
-* Builtin widgets are growing!
-* Builtin data fields are growing!
-* GUI is fully implemented and is ready to use. Color/font/image are customizable. (see `resource.py`)
-* Software localization is as simple as editing a txt file. (see `locale.py`).
-
-
