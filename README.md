@@ -67,7 +67,7 @@ class Number(Widget):
     OUTGOING = ANCHOR_NUMBER
 
     def Task(self):
-        return float(self["NUMBER"])
+        return self["NUMBER"]
 
 class Summer(Widget):
     NAME = "Summer"
@@ -75,9 +75,30 @@ class Summer(Widget):
     OUTGOING = ANCHOR_NUMBER
 
     def Name(self):
-        if self.IsDone():
+        if self.IsState("Done"):
             return "+".join(str(i) for i in self["NUMBERS"]) + "=" + str(self["OUT"])
 
     def Task(self):
         return sum(self["NUMBERS"])
 ```
+
+It's simple to make the `Summer` run in a separate thread (it sleeps for 0.5s after adding each number to mimic long running tasks):
+```python
+import threading
+from time import sleep
+
+class Summer(Widget):
+    ...
+    THREAD = True
+
+    def Task(self):
+        t = threading.currentThread()
+        p = 0
+        for i in self["NUMBERS"]:
+            sleep(0.5)
+            t.Checkpoint()
+            p += i
+        return p
+```
+
+It can also run in another process. See the code in the toy widget set for examples.
