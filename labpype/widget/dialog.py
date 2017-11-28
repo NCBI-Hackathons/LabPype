@@ -104,16 +104,6 @@ def MakeWidgetDialog(widget):
 
 
 # ======================================================= Dialog =======================================================
-# Rules: #TODO
-#   The following functions must be re-implemented:
-#       GetData:
-#           Supposed to be called only in __init__ or Reload
-#           Use only after GetReady is called; call Canvas.Refresh after GetReady
-#           Should always set all data area (If else)
-#       SetData:
-#           Supposed to be called only when OnApply or OnOK  by standard button
-#           Don't call SetData When reload is needed
-# ======================================================= Dialog =======================================================
 class Dialog(UI.BaseMain):
     AUTO = True
     SIZE = None
@@ -121,10 +111,12 @@ class Dialog(UI.BaseMain):
     MARGIN = 2
     LABEL_WIDTH = 80
     LINE_HEIGHT = 20
+    BUTTON_WIDTH = 80
 
     def __init__(self, parent, widget):
         super().__init__(parent, size=self.SIZE or wx.DefaultSize)  # MainFrame - DialogFrame - Dialog
         self.Widget = widget
+        self.Frame.SetIcon(self.Widget.__RES__["DIALOG"])
         self.Frame.OnClose = self.OnClose
         self.Harbor = self.GetGrandParent().Harbor
         self.Head = None

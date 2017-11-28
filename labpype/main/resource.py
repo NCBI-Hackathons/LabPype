@@ -52,9 +52,9 @@ class Resource(UI.Resource):
         self["BRUSH_ANCHOR_PASS"] = wx.Brush(self["COLOR_ANCHOR_PASS"])
         self["BRUSH_ANCHOR_FAIL"] = wx.Brush(self["COLOR_ANCHOR_FAIL"])
         # Font
-        self.SetMainFont(9, self["FONTFACE_MAIN"])
-        self["FONT_CANVAS"] = wx.Font(10, 70, 90, wx.FONTWEIGHT_BOLD, False, self["FONTFACE_CANVAS"])
-        self["FONT_FIXED"] = wx.Font(10, 70, 90, 90, False, self["FONTFACE_FIXED"])
+        self.SetMainFont(8, self["FONTFACE_MAIN"])
+        self["FONT_CANVAS"] = wx.Font(9, 70, 90, wx.FONTWEIGHT_BOLD, False, self["FONTFACE_CANVAS"])
+        self["FONT_FIXED"] = wx.Font(8, 70, 90, 90, False, self["FONTFACE_FIXED"])
         # IMG_ICON
         self["ICON"] = Img.ICON.GetIcon()
         # Bitmap
@@ -139,7 +139,8 @@ class Resource(UI.Resource):
         self.WidgetPen.SetColour(UI.AlphaBlend("#ffffff", cls.__COLOR__, 0.75))
         cls.__RES__ = {"CANVAS": {"IDLE": self.MaskCanvas.GetSubBitmap(self.RectCanvas)},  # large icon for canvas
                        "BUTTON": self.MaskGadget.GetSubBitmap(self.RectGadget),  # small icon for gadget/manage panel,
-                       "CURSOR": self.MaskCursor.GetSubBitmap(self.RectCursor)}  # cursor for drag and add widget
+                       "CURSOR": self.MaskCursor.GetSubBitmap(self.RectCursor),  # cursor for drag and add widget
+                       "DIALOG": None}  # icon for dialog
         # For Canvas
         mdc.SelectObject(cls.__RES__["CANVAS"]["IDLE"])
         mgc = wx.GraphicsContext.Create(mdc)
@@ -163,6 +164,7 @@ class Resource(UI.Resource):
         mgc.SetBrush(brush)
         mgc.DrawRectangle(0, 0, 30, 30)
         mdc.DrawBitmap(bitmap, 15 - w2, 15 - h2)
+        cls.__RES__["DIALOG"] = wx.Icon(cls.__RES__["BUTTON"])
         # For Cursor
         mdc.SelectObject(cls.__RES__["CURSOR"])
         mgc = wx.GraphicsContext.Create(mdc)

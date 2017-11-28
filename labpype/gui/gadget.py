@@ -56,15 +56,15 @@ class Gadget(UI.Scrolled):
         self.Inner.SetPosition((0, -self.GetViewPoint()[1]))
 
     def CalculateActualSize(self):
-        return self.Outer.GetSize()[0], self.Inner.GetEffectiveMinSize()[1] + 36
+        return self.Outer.GetSize()[0], self.Inner.GetEffectiveMinSize()[1] + 48
 
     def OnSize(self):
-        self.Inner.SetSize(wx.Size(self.Outer.GetSize()[0], self.Inner.GetEffectiveMinSize()[1] + 36))
+        self.Inner.SetSize(wx.Size(self.Outer.GetSize()[0], self.Inner.GetEffectiveMinSize()[1] + 48))
         self.SetActualSize()
 
     # --------------------------------------
     def AddItems(self, args):
-        itemSize = wx.Size(108, 36) if self.S["TOGGLE_GADGET_LABEL"] else wx.Size(36, 36)
+        itemSize = wx.Size(120, 48) if self.S["TOGGLE_GADGET_LABEL"] else wx.Size(40, 48)
         prefix = " ■ " if self.S["TOGGLE_GADGET_GROUP"] else " □ "
         sizer = self.Inner.GetSizer()
         group = self.L["GROUP_NONE"]
@@ -165,7 +165,7 @@ class Gadget(UI.Scrolled):
 
     def OnLabel(self):
         self.S["TOGGLE_GADGET_LABEL"] = not self.S["TOGGLE_GADGET_LABEL"]
-        size = (108 if self.S["TOGGLE_GADGET_LABEL"] else 36, 36)
+        size = (120 if self.S["TOGGLE_GADGET_LABEL"] else 40, 48)
         self.Freeze()
         for group in self.Groups:
             for item in self.Groups[group]["ITEMS"]:
@@ -178,7 +178,7 @@ class Gadget(UI.Scrolled):
 # ===================================================== GadgetItem =====================================================
 class GadgetItem(UI.Button):
     def __init__(self, parent, item, size):
-        super().__init__(parent, size=size, tag=("\n".join(item.NAME.split()), "L", 38), pic=(item.__RES__["BUTTON"], "L", 2), res="L", edge=None)
+        super().__init__(parent, size=size, tag=("\n".join(item.NAME.split()), "L", 40), pic=(item.__RES__["BUTTON"], "L", 4), res="L", edge=None)
         self.Item = item
         self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouse)
         self.Canvas = self.GetTopLevelParent().Canvas

@@ -79,7 +79,7 @@ class Manager(object):
             pkg.__ORI_GROUP__ = []  # ["groupName", widget, widget, "groupName", ...]
             for row in pkg.WIDGETS:
                 if isinstance(row, str):
-                    group = self.L.Get("%s/%s" % (pkgName.title(), row), "WIDGET_GROUP_")
+                    group = self.L.Get("%s/%s" % (pkgName, row), "WIDGET_GROUP_")
                     pkg.__ORI_GROUP__.append(group)
                     pkg.__GROUPS__.append(group)
                 else:

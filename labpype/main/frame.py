@@ -106,9 +106,9 @@ class MainFrame(wx.Frame):
             ("N", "TOOL_CANCEL", self.OnCancelAllDialog, wx.ACCEL_CTRL, wx.WXK_DELETE, {"res": "R"}),
             ("N", "TOOL_DELETE", self.Canvas.DeleteSelected, wx.ACCEL_NORMAL, wx.WXK_DELETE, {"res": "R"}),
         )
-        self.Info.AddItems((wx.StaticText(self.Info, size=(242, 16)), 0),
+        self.Info.AddItems((wx.StaticText(self.Info, size=(266, 16)), 0),
                            (wx.StaticText(self.Info, size=(-1, 16)), 1),
-                           (wx.StaticText(self.Info, size=(242, 16)), 0))
+                           (wx.StaticText(self.Info, size=(266, 16)), 0))
 
         self.SetAcceleratorTable(wx.AcceleratorTable(self.AcceleratorEntries))
 

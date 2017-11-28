@@ -125,7 +125,7 @@ class BaseWidget(Base):
             for args in self.INCOMING:
                 self.AddAnchor(False, *args)
         if self.OUTGOING:
-            self.AddAnchor(True, self.OUTGOING[0], "OUT", True, "RBT", self.Canvas.L.Get(self.OUTGOING[1], "ANCHOR_NAME_"), self.OUTGOING[2])
+            self.AddAnchor(True, self.OUTGOING[0], "OUT", True, "RBT", self.Canvas.L.Get(self.OUTGOING[1], "ANCHOR_NAME_"), self.OUTGOING[2] if len(self.OUTGOING) > 2 else Anchor)
         self.Anchors = self.Incoming + self.Outgoing
         if self.__class__.SINGLETON:
             self.__class__.SINGLETON = self

@@ -11,8 +11,8 @@ Setting.DEFAULT = {
     "MAXIMIZED"         : 0,
     "SHOW_GADGET"       : 1,
     "SHOW_HARBOR"       : 1,
-    "WIDTH_GADGET"      : 240,
-    "WIDTH_HARBOR"      : 240,
+    "WIDTH_GADGET"      : 264,
+    "WIDTH_HARBOR"      : 264,
     "HEIGHT_RECORD"     : 100,
 
     # Changed in real-time
