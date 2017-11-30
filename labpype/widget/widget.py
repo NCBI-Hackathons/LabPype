@@ -19,23 +19,6 @@ __all__ = [
 ]
 
 
-# ================================================== How to Subclass ===================================================
-#   Widget subclasses should have the following class properties:
-#       NAME      -  Default name of the widget, for display purpose.
-#       DIALOG    -  Associated Dialog class for interacting with the widget. Optional.
-#       THREAD    -  Whether the task should be done in a separate thread.
-#       INTERNAL  -  KEY for data that are input from the associated dialog.
-#       INCOMING  -  Incoming anchor(s): (AnchorType, KEY:str, IsMultiple:bool, Position:int, Name:str(""), AnchorClass:) [, (more anchors...)]
-#       OUTGOING  -  AnchorType of the data sending out: AnchorType [, Name:str(""), AnchorClass]
-#   The following methods should be re-implemented:
-#       Name      -  How canvas display the name of this widget. Default is cls.NAME
-#       Task      -  to do
-#       Save      -  to do
-#       Load      -  to do
-#   Destroy must be called when deleting the widget to (i)clear links; (ii)close dialog; (iii)stop thread; (iv)release id
-# ======================================================================================================================
-
-
 # ======================================================== Misc ========================================================
 class Interrupted(Exception):
     """Raise to interrupt running thread"""
@@ -57,12 +40,12 @@ class Thread(threading.Thread):
         super().__init__(*args, **kwargs)
         self.setDaemon(True)
         self.stop = False
-        self.progress = ()
+        self.status = ""
 
-    def Checkpoint(self, *args):
+    def Checkpoint(self, status=""):
         if self.stop:
             raise Interrupted
-        self.progress = args
+        self.status = status
 
 
 # ===================================================== BaseWidget =====================================================
@@ -130,6 +113,7 @@ class BaseWidget(Base):
         if self.__class__.SINGLETON:
             self.__class__.SINGLETON = self
         self.state = None
+        self.SetName()
         self.SetState(states[0])
         self.Init()
 
@@ -138,6 +122,7 @@ class BaseWidget(Base):
     def Destroy(self):
         self.Exit()
         getattr(self, "OnLeave%s" % self.state, DoNothing)()
+        self.SetState = DoNothing
         if self.Dialog:
             self.Dialog.OnClose()
         self.StopThread()
@@ -161,7 +146,7 @@ class BaseWidget(Base):
         getattr(self, "OnLeave%s" % self.state, DoNothing)()
         self.state = state
         getattr(self, "OnEnter%s" % self.state, DoNothing)()
-        self.SetName()
+        wx.CallAfter(self.SetName)
         wx.CallAfter(self.Canvas.ReDraw)
 
     # -------------------------------------------------------- #
@@ -238,8 +223,8 @@ class BaseWidget(Base):
         if self.Dialog:
             dc.DrawBitmap(self.Canvas.R["DIALOG_DTCH" if self.Dialog.detached else "DIALOG_ATCH"][3], self.x + 36, self.y)
         if self.Canvas.S["TOGGLE_NAME"]:
-            if self.Thread and self.Thread.progress:
-                dc.nameTexts.append("%s (%s/%s)" % (self.name, self.Thread.progress[0], self.Thread.progress[1]))
+            if self.Thread and self.Thread.status:
+                dc.nameTexts.append("%s %s" % (self.name, self.Thread.status))
             else:
                 dc.nameTexts.append(self.name)
             dc.namePoints.append(self.namePos)
@@ -378,6 +363,7 @@ class Widget(BaseWidget):
     def __init__(self, canvas):
         super().__init__(canvas, ("Idle", "Fail", "Done", "Wait", "Work"))
 
+    @Synced
     def OnBegin(self):
         if not (self.IsIncomingAvailable() and self.IsInternalAvailable()):
             self.SetState("Fail")
@@ -398,6 +384,7 @@ class Widget(BaseWidget):
         else:
             self.SetState("Work")
 
+    @Synced
     def OnAlter(self):
         self.SetState("Idle")
         self.StopThread()
@@ -413,6 +400,18 @@ class Widget(BaseWidget):
             else:
                 self.Dialog[4].Hide()
                 self.Dialog[3].Show()
+            self.Dialog.Layout()
+
+    def DialogRun(self):
+        if self.THREAD and self.Dialog:
+            self.Dialog[3].Hide()
+            self.Dialog[4].Show()
+            self.Dialog.Layout()
+
+    def DialogStop(self):
+        if self.THREAD and self.Dialog:
+            self.Dialog[4].Hide()
+            self.Dialog[3].Show()
             self.Dialog.Layout()
 
     def SaveState(self):  # TODO
@@ -434,11 +433,20 @@ class Widget(BaseWidget):
         else:
             self.RunDirectly()
 
+    def GetThread(self):
+        return threading.currentThread()
+
+    def IsCurrentThread(self):
+        return self.Thread == threading.currentThread()
+
+    def Checkpoint(self, *args):
+        threading.currentThread().Checkpoint(*args)
+
     def RunInThread(self):
         try:
             out = self.Task()
             with self.Canvas.Lock:
-                if self.IsState("Work") and self.Thread == threading.currentThread():
+                if self.IsState("Work") and self.IsCurrentThread():
                     self["OUT"] = out
                     if out is None:
                         self.SetState("Fail")
@@ -451,7 +459,7 @@ class Widget(BaseWidget):
             pass
         except Exception as e:
             with self.Canvas.Lock:
-                if self.IsState("Work") and self.Thread == threading.currentThread():
+                if self.IsState("Work") and self.IsCurrentThread():
                     self.SetState("Fail")
                     wx.CallAfter(self.Record.LogFail, "%s: %s" % (self.__class__.__name__, str(e)))
                     self.Thread = None
@@ -477,32 +485,20 @@ class Widget(BaseWidget):
         self.Bitmap = self.__RES__["CANVAS"]["IDLE"]
 
     def OnLeaveWait(self):
-        if self.THREAD and self.Dialog:
-            self.Dialog[4].Hide()
-            self.Dialog[3].Show()
-            self.Dialog.Layout()
+        wx.CallAfter(self.DialogStop)
 
     def OnEnterWait(self):
         self.Bitmap = self.__RES__["CANVAS"]["WAIT"]
-        if self.THREAD and self.Dialog:
-            self.Dialog[3].Hide()
-            self.Dialog[4].Show()
-            self.Dialog.Layout()
+        wx.CallAfter(self.DialogRun)
 
     def OnLeaveWork(self):
         self.Canvas.WidgetRunning(False)
-        if self.THREAD and self.Dialog:
-            self.Dialog[4].Hide()
-            self.Dialog[3].Show()
-            self.Dialog.Layout()
+        wx.CallAfter(self.DialogStop)
 
     def OnEnterWork(self):
         self.Bitmap = self.__RES__["CANVAS"]["WORK"]
         self.Canvas.WidgetRunning(True)
-        if self.THREAD and self.Dialog:
-            self.Dialog[3].Hide()
-            self.Dialog[4].Show()
-            self.Dialog.Layout()
+        wx.CallAfter(self.DialogRun)
         self.Run()
 
     def OnLeaveFail(self):

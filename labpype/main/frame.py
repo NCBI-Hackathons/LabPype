@@ -275,6 +275,8 @@ class MainFrame(wx.Frame):
 
     # --------------------------------------
     def OnClose(self, evt):
+        for w in self.Canvas.Widget:
+            w.StopThread()
         for dialog in wx.GetTopLevelWindows():
             if isinstance(dialog, UI.BaseDialog):
                 dialog.Destroy()
