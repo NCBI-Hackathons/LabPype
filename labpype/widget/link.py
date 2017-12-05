@@ -33,7 +33,7 @@ class _LegitLink(object):
         self.__dict__ = self._SharedState
         self.links = {}
 
-    def __call__(self, a1, a2): # TODO deal with subclass
+    def __call__(self, a1, a2):  # TODO deal with subclass
         if issubclass(a1.aType, ANCHOR_SPECIAL) and issubclass(a2.aType, ANCHOR_SPECIAL):
             return False
         if a1.GetType() == ANCHOR_NONE or a2.GetType() == ANCHOR_NONE:
@@ -70,12 +70,12 @@ class _LegitLink(object):
             self.Del(target, source, False)
 
     def AddBatch(self, links):
-        for reverse, source, target in links:
-            self.Add(source, target, reverse)
+        for link in links:
+            self.Add(link[1], link[2] if len(link) == 3 else link[1], link[0])
 
     def DelBatch(self, links):
-        for reverse, source, target in links:
-            self.Del(source, target, reverse)
+        for link in links:
+            self.Del(link[1], link[2] if len(link) == 3 else link[1], link[0])
 
 
 LegitLink = _LegitLink()

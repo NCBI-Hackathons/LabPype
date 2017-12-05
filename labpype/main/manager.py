@@ -8,6 +8,7 @@ import zipfile
 import importlib
 import DynaUI as UI
 from ..widget import LegitLink
+from .. import builtin
 
 __all__ = ["Manager"]
 
@@ -34,6 +35,7 @@ class Manager(object):
             self.ok = True
         except Exception:
             self.ok = False
+        self.Internal = {"Built-in": builtin}
 
     def Load(self, filename):
         if not os.path.exists(filename):
@@ -60,6 +62,8 @@ class Manager(object):
                 json.dump(out, f)
 
     def Init(self):
+        for name in self.Internal:
+            self.AddPackage(name, self.Internal[name])
         if self.pathInstalled not in sys.path:
             sys.path.insert(0, self.pathInstalled)
         failed = []
@@ -71,9 +75,13 @@ class Manager(object):
         self.Load(os.path.join(self.path, "widgets.json"))
         return failed
 
-    def AddPackage(self, pkgName):
+    def GetPackages(self):
+        return sorted([i for i in self.Packages if i not in self.Internal])
+
+    def AddPackage(self, pkgName, pkg=None):
         try:
-            pkg = importlib.import_module(pkgName)
+            if pkg is None:
+                pkg = importlib.import_module(pkgName)
             pkg.__WIDGETS__ = []  # [widget, ...]
             pkg.__GROUPS__ = []  # ["PkgName-groupName", ...]
             pkg.__ORI_GROUP__ = []  # ["groupName", widget, widget, "groupName", ...]

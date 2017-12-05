@@ -5,15 +5,20 @@ from .anchor import *
 from .flowcontrol import *
 from .operation import *
 
-FlowControl = [
+__all__ = [
+    "ANCHORS",
+    "WIDGETS",
+    "AnchorFCFS",
+]
+
+ANCHORS = []
+
+WIDGETS = [
     "Flow Control",
     ("#ffffff", Passer, Find("builtin/icon", "Passer.png")),
     ("#ffffff", Condition, Find("builtin/icon", "Condition.png")),
     ("#ffffff", Wait,),
-]
-
-Operation = [
-    "General Operation",
-    ("#c0ffff", Merge,),
-    ("#c0ffff", Filter,),
+    # "General Operation",
+    # ("#c0ffff", Merge,),
+    # ("#c0ffff", Filter,),
 ]

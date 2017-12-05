@@ -25,7 +25,7 @@ class Main(UI.Scrolled):
         self.AddScrollBar((0, 12))
 
         SizerLeft = wx.BoxSizer(wx.VERTICAL)
-        self.Installed = UI.ListCtrl(self, data=[(i,) for i in sorted(self.M.Packages)], width=(-1,))
+        self.Installed = UI.ListCtrl(self, data=[(i,) for i in self.M.GetPackages()], width=(-1,))
         SizerLeft.AddMany((
             (self.Installed, 1, wx.EXPAND | wx.ALL, 4),  # TODO IMAGE
             (UI.ToolNormal(self, size=SIZE_B, pics=(self.R["AP_CLOUD"], "L", 8), tag=(self.L["MANAGE_PKG_REMOTE"], "L", 32), edge="D", func=self.OnRemote, showTag=True), SF_S),
@@ -87,13 +87,13 @@ class Main(UI.Scrolled):
         if fp is not None:
             title, result = self.M.Install(fp)
             self.MainFrame.OnDialog("PKG_LOAD_RESULT_%s" % fp, "SIMPLE_TEXT", title, result)
-            self.Installed.SetData([(i,) for i in sorted(self.M.Packages)])
+            self.Installed.SetData([(i,) for i in self.M.GetPackages()])
             self.Installed.ReDraw()
 
     def OnRemove(self):
         if self.Installed.HasSelection():
             self.M.DelPackage(self.Installed.GetStringSelection())
-            self.Installed.SetData([(i,) for i in sorted(self.M.Packages)])
+            self.Installed.SetData([(i,) for i in self.M.GetPackages()])
             self.Installed.ReDraw()
 
     def OnReset(self):

@@ -85,7 +85,7 @@ class BaseWidget(Base):
         return super().__new__(cls)
 
     def __init__(self, canvas, states):
-        super().__init__(w=68, h=68)
+        super().__init__(w=70, h=70)
         self.Canvas = canvas
         self.Record = canvas.GetParent().Record
         self.Bitmap = None
@@ -164,7 +164,10 @@ class BaseWidget(Base):
         self.Pos2Anchor[a.pos].append(a)
 
     def SetName(self):
-        name = self.Name()
+        try:
+            name = self.Name()
+        except Exception:
+            name = self.NAME
         self.name = self.NAME if name is None else name
         self.nameSize = GetMultiLineTextExtent(self.Canvas, self.name)
         self.PositionName()
@@ -183,8 +186,8 @@ class BaseWidget(Base):
         for a in self.Anchors:
             if a.posAuto and a.connected:
                 self.Pos2Anchor[a.pos].remove(a)
-                x = sum(i.x for i in a.connected) / len(a.connected) - self.x - 25
-                y = sum(i.y for i in a.connected) / len(a.connected) - self.y - 25
+                x = sum(i.x for i in a.connected) / len(a.connected) - self.x - 26
+                y = sum(i.y for i in a.connected) / len(a.connected) - self.y - 26
                 theta = math.atan2(y, x) * 4
                 if "T" in a.posAllowed and -3.0 * math.pi <= theta < -math.pi:
                     a.pos = "T"
@@ -204,15 +207,15 @@ class BaseWidget(Base):
         if a.pos == "L":
             ax = -6
         elif a.pos == "R":
-            ax = 56
+            ax = 58
         else:
-            ax = 25 + offset
+            ax = 26 + offset
         if a.pos == "T":
             ay = -6
         elif a.pos == "B":
-            ay = 56
+            ay = 58
         else:
-            ay = 25 + offset
+            ay = 26 + offset
         a.SetPosition(self.x + ax, self.y + ay)
 
     def PositionName(self):
