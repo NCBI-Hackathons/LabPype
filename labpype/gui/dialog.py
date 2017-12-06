@@ -63,7 +63,7 @@ class SaveDialog(UI.BaseMain):
         Sizer.Add(SubSizer, 1, wx.EXPAND)
         self["MODE"] = self.AddButtonBundle(SubSizer, tags=(self.L["DIALOG_SAVE_MODE_S"], self.L["DIALOG_SAVE_MODE_P"]), group="_SAVE_MODE_", width=100, toggled=self.MainFrame.T["LAST_FILE"].lower().endswith(".pa"), onClick=self.OnMode)
         SubSizer.Add(4, 4, 1)
-        self.AddStdButton(SubSizer, onOK=self.OnSave, onCancel=self.Frame.OnClose)
+        self.AddStdButton(SubSizer, size=(60, 20), onOK=self.OnSave, onCancel=self.Frame.OnClose)
         self.SetSizer(Sizer)
 
     def OnMode(self):
@@ -92,21 +92,25 @@ class LoadDialog(UI.BaseMain):
         super().__init__(parent, size=wx.Size(480, 400))
         self.MainFrame = self.GetGrandParent()
         Sizer = wx.BoxSizer(wx.VERTICAL)
+        SubSizer0 = wx.BoxSizer(wx.HORIZONTAL)
         SubSizer1 = wx.BoxSizer(wx.HORIZONTAL)
         SubSizer2 = wx.BoxSizer(wx.HORIZONTAL)
+        Sizer.Add(SubSizer0, 0, wx.EXPAND)
         Sizer.Add(SubSizer1, 1, wx.EXPAND)
-        self["LB_S"] = self.AddListBox(SubSizer1, label=self.L["DIALOG_LOAD_LIST_S"], choices=["\n".join(os.path.split(i)) for i in self.S["HISTORY_SCHEME"]], inline=False,
+        self.AddButton(SubSizer0, label=self.L["DIALOG_LOAD_LIST_S"], tag=self.L["DIALOG_CLEAN_S"], width=-1, onClick=(self.OnCleanRecent, "S"))
+        self.AddButton(SubSizer0, label=self.L["DIALOG_LOAD_LIST_P"], tag=self.L["DIALOG_CLEAN_P"], width=-1, onClick=(self.OnCleanRecent, "P"))
+        self["LB_S"] = self.AddListBox(SubSizer1, choices=["\n".join(os.path.split(i)) for i in self.S["HISTORY_SCHEME"]],
                                        onClick=(self.OnRecent, "LB_S"), onDClick=(self.OnRecentGo, "LB_S"))
-        self["LB_P"] = self.AddListBox(SubSizer1, label=self.L["DIALOG_LOAD_LIST_P"], choices=["\n".join(os.path.split(i)) for i in self.S["HISTORY_PROJECT"]], inline=False,
+        self["LB_P"] = self.AddListBox(SubSizer1, choices=["\n".join(os.path.split(i)) for i in self.S["HISTORY_PROJECT"]],
                                        onClick=(self.OnRecent, "LB_P"), onDClick=(self.OnRecentGo, "LB_P"))
-        self["FILE"] = self.AddPickerFile(Sizer, mode="L", onSelect=self.OnChooseFile, wildcard="All files (*.pa,*.pas)|*.pa;*.pas|Project files (*.pa)|*.pa|Scheme files (*.pas)|*.pas")
+        self["FILE"] = self.AddPickerFile(Sizer, mode="L", onSelect=self.OnChooseFile,
+                                          wildcard="All files (*.pa,*.pas)|*.pa;*.pas|Project files (*.pa)|*.pa|Scheme files (*.pas)|*.pas")
         self.AddSeparator(Sizer)
         Sizer.Add(SubSizer2, 0, wx.EXPAND)
         self["MODE"] = self.AddButtonBundle(SubSizer2, tags=(self.L["DIALOG_LOAD_MODE_A"], self.L["DIALOG_LOAD_MODE_O"]), toggled=0, group="_OPEN_MODE_", width=80)
-        SubSizer2.Add(4, 4, 1)
         self["ONLY"] = self.AddButtonToggle(SubSizer2, tags=(self.L["DIALOG_LOAD_ONLY_N"], self.L["DIALOG_LOAD_ONLY_Y"]), toggle=False, width=160)
         SubSizer2.Add(4, 4, 1)
-        self.AddStdButton(SubSizer2, onOK=self.OnLoad, onCancel=self.Frame.OnClose)
+        self.AddStdButton(SubSizer2, size=(60, 20), onOK=self.OnLoad, onCancel=self.Frame.OnClose)
         self.SetSizer(Sizer)
         self["LB_S"].SetLineHeight()
         self["LB_P"].SetLineHeight()
@@ -133,6 +137,17 @@ class LoadDialog(UI.BaseMain):
         self.OnLoad()
 
     def OnLoad(self):
-        if self.MainFrame.OnLoad(self["FILE"].GetValue(), append=self["MODE"].GetToggled() == 0, schemeOnly=self["ONLY"].IsToggled()):
-            return self.Frame.OnClose()
+        if self["FILE"].GetValue():
+            if self.MainFrame.OnLoad(self["FILE"].GetValue(), append=self["MODE"].GetToggled() == 0, schemeOnly=self["ONLY"].IsToggled()):
+                return self.Frame.OnClose()
         wx.Bell()
+
+    def OnCleanRecent(self, x):
+        if x == "S":
+            self.S["HISTORY_SCHEME"] = []
+            self["LB_S"].SetData(())
+            self["LB_S"].ReDraw()
+        else:
+            self.S["HISTORY_PROJECT"] = []
+            self["LB_P"].SetData(())
+            self["LB_P"].ReDraw()

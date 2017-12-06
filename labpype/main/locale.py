@@ -74,6 +74,8 @@ Locale.DEFAULT = {
     "DIALOG_LOAD_ONLY_N"  : "Scheme only: No",
     "DIALOG_LOAD_LIST_S"  : "Schemes",
     "DIALOG_LOAD_LIST_P"  : "Projects",
+    "DIALOG_CLEAN_S"      : "Clean recent schemes",
+    "DIALOG_CLEAN_P"      : "Clean recent projects",
     "DIALOG_SAVE_MODE_S"  : "Save scheme",
     "DIALOG_SAVE_MODE_P"  : "Save project",
     "DIALOG_NEW?_INFO"    : "Canvas is not empty. Are you sure you want to clear the canvas?",

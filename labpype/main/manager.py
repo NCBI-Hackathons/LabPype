@@ -108,6 +108,10 @@ class Manager(object):
             self.Widgets.update((widget.__ID__, widget) for widget in pkg.__WIDGETS__)
             self.Groups.extend(pkg.__ORI_GROUP__)
             LegitLink.AddBatch(pkg.ANCHORS)
+            for funcName in ("RESOURCE", "LOCALE"):
+                if hasattr(pkg, funcName):
+                    for key, value in getattr(pkg, funcName)():
+                        self.R[key] = value
             return True
         except Exception:
             return False
