@@ -7,10 +7,14 @@ import shutil
 import zipfile
 import importlib
 import DynaUI as UI
-from ..widget import LegitLink
+from ..widget import LegitLink, LinkageRedefinedError
 from .. import builtin
 
 __all__ = ["Manager"]
+
+
+class RedefinedError(Exception):
+    """Raise to Stop the installation of a package"""
 
 
 class Manager(object):
@@ -82,9 +86,17 @@ class Manager(object):
         try:
             if pkg is None:
                 pkg = importlib.import_module(pkgName)
+            if not self.LoadLinkage(pkg):
+                raise Exception
+            if not self.LoadFromFunction(pkg, "RESOURCE"):
+                raise Exception
+            if not self.LoadFromFunction(pkg, "SETTING"):
+                raise Exception
+            if not self.LoadFromFunction(pkg, "LOCALE"):
+                raise Exception
             pkg.__WIDGETS__ = []  # [widget, ...]
-            pkg.__GROUPS__ = []  # ["PkgName-groupName", ...]
-            pkg.__ORI_GROUP__ = []  # ["groupName", widget, widget, "groupName", ...]
+            pkg.__GROUPS__ = []  # ["pkgName/groupName", ...]
+            pkg.__ORI_GROUP__ = []  # ["pkgName/groupName", widget, widget, "pkgName/groupName", ...]
             for row in pkg.WIDGETS:
                 if isinstance(row, str):
                     group = self.L.Get("%s/%s" % (pkgName, row), "WIDGET_GROUP_")
@@ -103,16 +115,41 @@ class Manager(object):
                     widget.NAME = self.L.Get(widget.NAME, "WIDGET_NAME_")
                     pkg.__ORI_GROUP__.append(widget)
                     pkg.__WIDGETS__.append(widget)
+        except Exception:
+            return False
+        else:
             self.R.DrawWidgets(pkg.__WIDGETS__)
             self.Packages[pkgName] = pkg
             self.Widgets.update((widget.__ID__, widget) for widget in pkg.__WIDGETS__)
             self.Groups.extend(pkg.__ORI_GROUP__)
-            LegitLink.AddBatch(pkg.ANCHORS)
-            for funcName in ("RESOURCE", "LOCALE"):
-                if hasattr(pkg, funcName):
-                    for key, value in getattr(pkg, funcName)():
-                        self.R[key] = value
             return True
+
+    def LoadLinkage(self, pkg):
+        try:
+            LegitLink.AddBatch(pkg.ANCHORS)
+            return True
+        except LinkageRedefinedError:
+            LegitLink.DelBatch(pkg.ANCHORS)
+            return False
+        except Exception:
+            return False
+
+    def LoadFromFunction(self, pkg, funcName):
+        if not hasattr(pkg, funcName):
+            return True
+        try:
+            d = getattr(pkg, funcName).item()
+            for key, value in d:
+                if key in self.R:
+                    raise RedefinedError
+                else:
+                    self.R[key] = value
+            return True
+        except RedefinedError:
+            for key, value in d:
+                if key in self.R:
+                    del self.R[key]
+            return False
         except Exception:
             return False
 

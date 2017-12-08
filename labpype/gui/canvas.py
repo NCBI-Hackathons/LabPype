@@ -15,9 +15,10 @@ class Canvas(UI.BaseControl):
         super().__init__(parent, style=wx.WANTS_CHARS, font=parent.R["FONT_CANVAS"], bg="B", fg="B", fpsLimit=60)
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouse)
-        self.NewAnimation("LOCATE", 50, self.ToggleSelect, (), False)  # TODO
+        self.NewAnimation("LOCATE", 50, self.ToggleSelect, (), False)
         self.NewTimer("_WIDGET_UPDATE_", lambda: self.ReDraw() if self.widgetRunning else None)
         self.NewTimer("_HIDDEN_BITMAP_", self.ReDrawHidden)
+        self.NewTimer("_HIDDEN_BITMAP_FORCE_DRAW_", self.ReDrawHidden)
         self.SetStatus = parent.SetStatus
         if self.S["TOGGLE_CURV"]:
             self.DrawLink1 = DrawCurve
@@ -176,7 +177,7 @@ class Canvas(UI.BaseControl):
         elif not selected and w in self.SelectedWidget:
             self.SelectedWidget.remove(w)
 
-    def ToggleSelect(self, w):  # TODO -
+    def ToggleSelect(self, w):
         if w in self.SelectedWidget:
             self.SelectedWidget.remove(w)
         else:
@@ -420,8 +421,11 @@ class Canvas(UI.BaseControl):
 
         # Finish
         self.StartTimer("_HIDDEN_BITMAP_", 100, wx.TIMER_ONE_SHOT)
+        if not self.Timers["_HIDDEN_BITMAP_FORCE_DRAW_"].IsRunning():
+            self.StartTimer("_HIDDEN_BITMAP_FORCE_DRAW_", 1000, wx.TIMER_ONE_SHOT)
 
     def ReDrawHidden(self):
+        self.StopTimer("_HIDDEN_BITMAP_FORCE_DRAW_")
         mdc = wx.MemoryDC()
         mdc.SelectObject(self.hiddenBitmap)
         mdc.SetBackground(wx.BLACK_BRUSH)

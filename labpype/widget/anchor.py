@@ -162,6 +162,12 @@ class Anchor(Base):
         if onAlter:
             dest.Widget.OnAlter()
 
+    def Retrieve(self):
+        if self.connected:
+            data = [LegitLink.Transfer(dest.GetType(),self.GetType())(dest.Widget[dest.key]) for dest in self.connected]
+            return data[0] if self.single else data
+        return None
+
     # ----------------------------------------------------------
     def GetType(self):
         return self.aType

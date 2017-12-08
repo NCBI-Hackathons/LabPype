@@ -37,7 +37,7 @@ class MainFrame(wx.Frame):
         self.SetStatus = UI.DoNothing
         self.SetDoubleBuffered(True)
         self.SetMinSize(wx.Size(800, 600))
-        self.SetIcon(self.R["ICON"])
+        self.SetIcon(self.R["__LabPype__"])
         self.SetFont(self.R["FONT_N"])
         self.Bind(wx.EVT_CLOSE, self.OnClose)
         if self.S["MAXIMIZED"]:

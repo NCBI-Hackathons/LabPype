@@ -280,13 +280,7 @@ class BaseWidget(Base):
 
     def UpdateIncoming(self):
         for a in self.Incoming:
-            if a.connected:
-                if a.multiple:
-                    self[a.key] = [dest.Widget[dest.key] for dest in a.connected]
-                else:
-                    self[a.key] = a.connected[0].Widget[a.connected[0].key]
-            else:
-                self[a.key] = None
+            self[a.key] = a.Retrieve()
 
     def UpdateOutgoing(self):
         for a in self.Outgoing:

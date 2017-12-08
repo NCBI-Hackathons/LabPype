@@ -1,6 +1,25 @@
 from wx.lib.embeddedimage import PyEmbeddedImage
 
 # ----------------------------------------------------------------------
+LabPype = PyEmbeddedImage(
+    b'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwY'
+    b'AAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAALOSURBVHja'
+    b'xJdLbhNBEIa/sp2HiK1ABBIrJJASBUUsWLBh5T4AG87iHWt2PgtXGPbcIIqECIg8lIREk5cd'
+    b'j4tFqq2awRNmEjlpyWqru6b+6urqb3pEVXnI1qr7gIgIIEATaNh/BcZABqjWWJXUyYCJN7lW'
+    b'GbnxR8AicAkMgaxqEHUzIFE8hDARUFURkXmgDZxaIJUCaNQMoOnF1/p9AEIIqqrHwGPLRLOq'
+    b'w7oBTOyjeOytLQMLdfw2brMFAJu9Xq63NucKcyZFuGDbcO5rIEkSEZF1y8A2cKSqg0pOVbXy'
+    b'z1a4AqyoKt1uNxb7BvDB+hVgrqrPuluQWYW3C+OvgD0gtflsVjWgwJWJ+Hbsjt9V1SOY40AV'
+    b'wrnn0oKfLeDJbYjZmkK4qwLhltzKYt1cxCI0BoiIjM32PF9ipf6GIpK1KhBuEXhqD6Ve/Gs/'
+    b'odsLPojnwDPgrGhbRszGNMIlrTVPuCNV3VbV/aK47812V1W/F22TflpKTFFVRGRBVQchBI3i'
+    b'AGG0ObVwoqhv3V6YahvFAUKvE5nxDvgFHMUAFlX10mcgiidJkqNaMQNevMw26aeEXsdD6z3w'
+    b'AzicZOAGwm3YOT8GtlR1p1gDzvYN8BL4U7R1Nqu2BbkMzAEdYGx7FKt2HVg1yJza8KGq7k1x'
+    b'/NZsfwInNnWgqvvO3yrwwmwOgDQG0LCiaFt0y4bdzIRTB58l4EJVd0MI6lb+2la1Y6cA89kx'
+    b'v007yiceXC1HuKENjkywYdAYFDhwYUfNtzXgN7BrK7t0b8dT94r2/obANYjsEGdO6KyEhGLz'
+    b'e4UAvllQA5uP9tlN/iYkjEE4g5vuhCN/YhyEhv4yUsXfna9kyZdPOQjZXt/PlSyKx95a+96u'
+    b'ZOHj51wfM/SQV7IcYKpeyep+F4yBJRGZV1UpAczgf4V3lwyUAesfwKjqeBYZqAKsYZ0rmdT9'
+    b'On7Qj9NZtL8DACozSphP5UC3AAAAAElFTkSuQmCC')
+
+# ----------------------------------------------------------------------
 MASK_CANVAS = PyEmbeddedImage(
     b'iVBORw0KGgoAAAANSUhEUgAAADgAAAA4CAYAAACohjseAAAAx0lEQVR42uzb7QmAIBCA4S6a'
     b'ogUEp6jJm8MFGkNDSIjI6kdQd70HIfjLBz/jVFJKjeVoG+MBUHt0+wrvfZ/LMjdjjK83UkQO'
@@ -18,25 +37,6 @@ MASK_GADGET = PyEmbeddedImage(
     b'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAV0lEQVR42uzXsRHAIAxDUcSx'
     b'QYbJZGzFbKzg2EVWQAVfhV36nTorIpoz3Xlc0itnAwlY1gYyjxvQAAAAAAAAAAAAAAAAAOB6'
     b'wB7/l5pr1q928niNT4ABAKrRCdVdLub+AAAAAElFTkSuQmCC')
-
-# ----------------------------------------------------------------------
-ICON = PyEmbeddedImage(
-    b'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwY'
-    b'AAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAALOSURBVHja'
-    b'xJdLbhNBEIa/sp2HiK1ABBIrJJASBUUsWLBh5T4AG87iHWt2PgtXGPbcIIqECIg8lIREk5cd'
-    b'j4tFqq2awRNmEjlpyWqru6b+6urqb3pEVXnI1qr7gIgIIEATaNh/BcZABqjWWJXUyYCJN7lW'
-    b'GbnxR8AicAkMgaxqEHUzIFE8hDARUFURkXmgDZxaIJUCaNQMoOnF1/p9AEIIqqrHwGPLRLOq'
-    b'w7oBTOyjeOytLQMLdfw2brMFAJu9Xq63NucKcyZFuGDbcO5rIEkSEZF1y8A2cKSqg0pOVbXy'
-    b'z1a4AqyoKt1uNxb7BvDB+hVgrqrPuluQWYW3C+OvgD0gtflsVjWgwJWJ+Hbsjt9V1SOY40AV'
-    b'wrnn0oKfLeDJbYjZmkK4qwLhltzKYt1cxCI0BoiIjM32PF9ipf6GIpK1KhBuEXhqD6Ve/Gs/'
-    b'odsLPojnwDPgrGhbRszGNMIlrTVPuCNV3VbV/aK47812V1W/F22TflpKTFFVRGRBVQchBI3i'
-    b'AGG0ObVwoqhv3V6YahvFAUKvE5nxDvgFHMUAFlX10mcgiidJkqNaMQNevMw26aeEXsdD6z3w'
-    b'AzicZOAGwm3YOT8GtlR1p1gDzvYN8BL4U7R1Nqu2BbkMzAEdYGx7FKt2HVg1yJza8KGq7k1x'
-    b'/NZsfwInNnWgqvvO3yrwwmwOgDQG0LCiaFt0y4bdzIRTB58l4EJVd0MI6lb+2la1Y6cA89kx'
-    b'v007yiceXC1HuKENjkywYdAYFDhwYUfNtzXgN7BrK7t0b8dT94r2/obANYjsEGdO6KyEhGLz'
-    b'e4UAvllQA5uP9tlN/iYkjEE4g5vuhCN/YhyEhv4yUsXfna9kyZdPOQjZXt/PlSyKx95a+96u'
-    b'ZOHj51wfM/SQV7IcYKpeyep+F4yBJRGZV1UpAczgf4V3lwyUAesfwKjqeBYZqAKsYZ0rmdT9'
-    b'On7Qj9NZtL8DACozSphP5UC3AAAAAElFTkSuQmCC')
 
 # ----------------------------------------------------------------------
 WIDGET = PyEmbeddedImage(

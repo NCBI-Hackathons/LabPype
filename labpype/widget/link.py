@@ -2,6 +2,7 @@
 
 __all__ = [
     "LegitLink",
+    "LinkageRedefinedError",
     "ANCHOR_REGULAR",
     "ANCHOR_SPECIAL",
     "ANCHOR_ALL",
@@ -26,6 +27,10 @@ class ANCHOR_NONE(ANCHOR_SPECIAL):
     pass
 
 
+class LinkageRedefinedError(Exception):
+    """Raise to Stop the installation of a package"""
+
+
 class _LegitLink(object):
     _SharedState = {}
 
@@ -46,23 +51,22 @@ class _LegitLink(object):
             return a2.GetType() in self.links.get(a1.GetType(), {})
         return False
 
-    def Add(self, source, target, reverse=False):
+    def Add(self, source, target, reverse=False, onTransferForward=lambda x: x, onTransferReverse=lambda x: x):
         if source is target:
             reverse = False
         if source not in self.links:
             self.links[source] = {}
         if target not in self.links[source]:
-            self.links[source][target] = 1
+            self.links[source][target] = onTransferForward
         else:
-            self.links[source][target] += 1
+            raise LinkageRedefinedError("Linkage between %s and %s is already defined" % (source, target))
         if reverse:
-            self.Add(target, source, False)
+            self.Add(target, source, False, onTransferReverse)
 
     def Del(self, source, target, reverse=False):
         if source is target:
             reverse = False
-        self.links[source][target] -= 1
-        if self.links[source][target] == 0:
+        if target in self.links[source]:
             del self.links[source][target]
         if not self.links[source]:
             del self.links[source]
@@ -71,11 +75,14 @@ class _LegitLink(object):
 
     def AddBatch(self, links):
         for link in links:
-            self.Add(link[1], link[2] if len(link) == 3 else link[1], link[0])
+            self.Add(link[1], link[2] if len(link) > 2 else link[1], link[0], *link[3:])
 
     def DelBatch(self, links):
         for link in links:
-            self.Del(link[1], link[2] if len(link) == 3 else link[1], link[0])
+            self.Del(link[1], link[2] if len(link) > 2 else link[1], link[0])
+
+    def Transfer(self, source, target):
+        return self.links[source][target]
 
 
 LegitLink = _LegitLink()

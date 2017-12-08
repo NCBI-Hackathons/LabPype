@@ -20,6 +20,7 @@ class Resource(UI.Resource):
                 kwargs[key] = value
         super().__init__(**kwargs)
         # Color
+        self["__LabPype__"] = Img.LabPype.GetIcon()
         for key, default in {
             "FONTFACE_CANVAS"  : wx.SystemSettings().GetFont(wx.SYS_DEFAULT_GUI_FONT).GetFaceName(),
             "FONTFACE_MAIN"    : wx.SystemSettings().GetFont(wx.SYS_DEFAULT_GUI_FONT).GetFaceName(),
@@ -55,35 +56,16 @@ class Resource(UI.Resource):
         self.SetMainFont(8, self["FONTFACE_MAIN"])
         self["FONT_CANVAS"] = wx.Font(9, 70, 90, wx.FONTWEIGHT_BOLD, False, self["FONTFACE_CANVAS"])
         self["FONT_FIXED"] = wx.Font(8, 70, 90, 90, False, self["FONTFACE_FIXED"])
-        # IMG_ICON
-        self["ICON"] = Img.ICON.GetIcon()
         # Bitmap
-        for key in ("TOOL_OPTION",
-                    "TOOL_FILE_N",
-                    "TOOL_FILE_O",
-                    "TOOL_FILE_S",
-                    "TOOL_ALGN_L",
-                    "TOOL_ALGN_V",
-                    "TOOL_ALGN_R",
-                    "TOOL_ALGN_T",
-                    "TOOL_ALGN_H",
-                    "TOOL_ALGN_B",
-                    "TOOL_DIST_H",
-                    "TOOL_DIST_V",
-                    "TOOL_MOVE_U",
-                    "TOOL_MOVE_D",
-                    "TOOL_MOVE_T",
-                    "TOOL_MOVE_B",
-                    "TOOL_T_ANCR",
-                    "TOOL_T_NAME",
-                    "TOOL_T_SNAP",
-                    "TOOL_T_CURV",
-                    "TOOL_T_DIAG",
-                    "TOOL_T_FSCN",
-                    "TOOL_CANCEL",
-                    "TOOL_DELETE",
-                    "TOOL_T_SHOW",
-                    "TOOL_T_TEXT",
+        for key in ("TOOL_OPTION", "TOOL_DELETE",
+                    "TOOL_FILE_N", "TOOL_FILE_O", "TOOL_FILE_S",
+                    "TOOL_ALGN_L", "TOOL_ALGN_V", "TOOL_ALGN_R",
+                    "TOOL_ALGN_T", "TOOL_ALGN_H", "TOOL_ALGN_B",
+                    "TOOL_DIST_H", "TOOL_DIST_V",
+                    "TOOL_MOVE_U", "TOOL_MOVE_D", "TOOL_MOVE_T", "TOOL_MOVE_B", "TOOL_T_ANCR",
+                    "TOOL_T_NAME", "TOOL_T_SNAP", "TOOL_T_CURV",
+                    "TOOL_T_DIAG", "TOOL_T_FSCN", "TOOL_CANCEL",
+                    "TOOL_T_SHOW", "TOOL_T_TEXT",
                     "TOOL_MANAGE",
 
                     "DIALOG_MISC",
