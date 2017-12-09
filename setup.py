@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="LabPype",
-    version="0.5.3",
+    version="0.5.5",
     description="A Framework for Creating Pipeline Software",
     url="https://github.com/NCBI-Hackathons/LabPype",
     author="Yadi Zhou",

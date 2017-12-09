@@ -2,7 +2,6 @@
 
 import os
 import wx
-import json
 import DynaUI as UI
 from . import images as Img
 
@@ -11,16 +10,9 @@ __all__ = ["Resource"]
 
 class Resource(UI.Resource):
     def __init__(self, fp):
-        kwargs = {}
-        if not os.path.exists(fp):
-            with open(fp, "wb") as f:
-                f.write(b"\x7b\x7d")
-        with open(fp, "r", encoding="utf-8") as f:
-            for key, value in json.load(f).items():
-                kwargs[key] = value
-        super().__init__(**kwargs)
-        # Color
+        super().__init__(fp)
         self["__LabPype__"] = Img.LabPype.GetIcon()
+        # Color
         for key, default in {
             "FONTFACE_CANVAS"  : wx.SystemSettings().GetFont(wx.SYS_DEFAULT_GUI_FONT).GetFaceName(),
             "FONTFACE_MAIN"    : wx.SystemSettings().GetFont(wx.SYS_DEFAULT_GUI_FONT).GetFaceName(),
@@ -36,7 +28,7 @@ class Resource(UI.Resource):
             "COLOR_ANCHOR_PASS": "#00ff00",
             "COLOR_ANCHOR_FAIL": "#ff0000",
         }.items():
-            self[key] = kwargs.get(key, default)
+            self[key] = self.dict.get(key, default)
         # GUI
         self["PEN_CONNECTION"] = wx.Pen(self["COLOR_CONNECTION"], 3)
         self["PEN_CONNECTION_SELECTION1"] = wx.Pen(self["COLOR_SELECTION"], 11)

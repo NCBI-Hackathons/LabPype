@@ -23,9 +23,8 @@ class App(wx.App):
         r = Resource(os.path.join(self.path, "resources.json"))
         s = Setting(os.path.join(self.path, "settings.json"))
         l = Locale(Ut.Find("lang", "%s.json" % s["LANGUAGE"]))
-        if not m.ok:
-            UI.ShowSimpleMessageDialog(None, l["MSG_WORKSPACE_FAIL"] % self.path, l["GENERAL_HEAD_FAIL"])
-            return
+        if not (m.ok and r.ok and s.ok and l.ok):
+            return UI.ShowSimpleMessageDialog(None, l["MSG_WORKSPACE_FAIL"] % self.path, l["GENERAL_HEAD_FAIL"])
         Frame = MainFrame(r, s, l, m)
         Frame.Show()
         self.MainLoop()

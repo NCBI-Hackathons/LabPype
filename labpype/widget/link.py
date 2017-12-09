@@ -2,7 +2,6 @@
 
 __all__ = [
     "LegitLink",
-    "LinkageRedefinedError",
     "ANCHOR_REGULAR",
     "ANCHOR_SPECIAL",
     "ANCHOR_ALL",
@@ -25,10 +24,6 @@ class ANCHOR_ALL(ANCHOR_SPECIAL):
 
 class ANCHOR_NONE(ANCHOR_SPECIAL):
     pass
-
-
-class LinkageRedefinedError(Exception):
-    """Raise to Stop the installation of a package"""
 
 
 class _LegitLink(object):
@@ -59,7 +54,7 @@ class _LegitLink(object):
         if target not in self.links[source]:
             self.links[source][target] = onTransferForward
         else:
-            raise LinkageRedefinedError("Linkage between %s and %s is already defined" % (source, target))
+            raise Exception
         if reverse:
             self.Add(target, source, False, onTransferReverse)
 
@@ -72,14 +67,6 @@ class _LegitLink(object):
             del self.links[source]
         if reverse:
             self.Del(target, source, False)
-
-    def AddBatch(self, links):
-        for link in links:
-            self.Add(link[1], link[2] if len(link) > 2 else link[1], link[0], *link[3:])
-
-    def DelBatch(self, links):
-        for link in links:
-            self.Del(link[1], link[2] if len(link) > 2 else link[1], link[0])
 
     def Transfer(self, source, target):
         return self.links[source][target]

@@ -29,8 +29,6 @@ class MainFrame(wx.Frame):
         self.S = s
         self.L = l
         self.M = m
-        self.M.R = self.R
-        self.M.L = self.L
         self.T = {"LAST_FILE": "", }
         self.Dialogs = {}
 
@@ -142,6 +140,7 @@ class MainFrame(wx.Frame):
             self.SashR.Hide()
             self.HiderR.show = False
 
+        self.M.SetRSL(r, s, l)
         failed = self.M.Init()
         if failed:
             self.OnDialog("MSG_PKG_INIT_FAIL", "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MSG_PKG_INIT_FAIL"] % ",".join(failed))

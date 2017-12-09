@@ -7,14 +7,10 @@ import shutil
 import zipfile
 import importlib
 import DynaUI as UI
-from ..widget import LegitLink, LinkageRedefinedError
+from ..widget import LegitLink
 from .. import builtin
 
 __all__ = ["Manager"]
-
-
-class RedefinedError(Exception):
-    """Raise to Stop the installation of a package"""
 
 
 class Manager(object):
@@ -29,41 +25,21 @@ class Manager(object):
                     and UI.FindOrCreateDirectory(self.pathDownloaded)
                     and UI.FindOrCreateDirectory(self.pathTemporary)):
                 raise Exception
-            self.R = None
-            self.L = None
             self.Manage = None
             self.Gadget = None
             self.Packages = {}  # {"pkgName": pkg, ...}
-            self.Widgets = {}  # {"pkgName.widgetClassName": pkg.widgetClass, ...}
+            self.Widgets = {}  # {"pkgName/widgetClassName": pkg.widgetClass, ...}
             self.Groups = []  # ["groupName", widget, widget, "groupName", ...]
+            self.Internal = {"Built-in": builtin}
+            self.filename = None
             self.ok = True
         except Exception:
             self.ok = False
-        self.Internal = {"Built-in": builtin}
 
-    def Load(self, filename):
-        if not os.path.exists(filename):
-            with open(filename, "wb") as f:
-                f.write(b"[]")
-        self.Groups = []
-        with open(filename, "r", encoding="utf-8") as f:
-            for key, value in json.load(f):
-                if value == "W" and key in self.Widgets:
-                    self.Groups.append(self.Widgets[key])
-                elif value == "G":
-                    self.Groups.append(key)
-        self.filename = filename
-
-    def Save(self):
-        out = []
-        for i in self.Groups:
-            if isinstance(i, str):
-                out.append((i, "G"))
-            else:
-                out.append((i.__ID__, "W"))
-        if self.filename is not None:
-            with open(self.filename, "w", encoding="utf-8") as f:
-                json.dump(out, f)
+    def SetRSL(self, r, s, l):
+        self.R = r
+        self.S = s
+        self.L = l
 
     def Init(self):
         for name in self.Internal:
@@ -82,92 +58,161 @@ class Manager(object):
     def GetPackages(self):
         return sorted([i for i in self.Packages if i not in self.Internal])
 
+    # -------------------------------------------------------- #
+    def Load(self, filename):
+        try:
+            if not os.path.exists(filename):
+                with open(filename, "wb") as f:
+                    f.write(b"[]")
+            self.Groups = []
+            with open(filename, "r", encoding="utf-8") as f:
+                for key, value in json.load(f):
+                    if value == "W" and key in self.Widgets:
+                        self.Groups.append(self.Widgets[key])
+                    elif value == "G":
+                        self.Groups.append(key)
+            self.filename = filename
+            return True
+        except Exception:
+            return False
+
+    def Save(self):
+        try:
+            if self.filename is not None:
+                out = []
+                for i in self.Groups:
+                    if isinstance(i, str):
+                        out.append((i, "G"))
+                    else:
+                        out.append((i.__ID__, "W"))
+                with open(self.filename, "w", encoding="utf-8") as f:
+                    json.dump(out, f)
+            return True
+        except Exception:
+            return False
+
+    # -------------------------------------------------------- #
+    def LoadLinkage(self, pkg):
+        try:
+            for link in pkg.ANCHORS:
+                LegitLink.Add(link[1], link[2] if len(link) > 2 else link[1], link[0], *link[3:])
+            return True
+        except Exception:
+            return False
+
+    def LoadResource(self, pkg):
+        return self.LoadXXX(pkg, "RESOURCE", self.R)
+
+    def LoadSetting(self, pkg):
+        return self.LoadXXX(pkg, "SETTING", self.S)
+
+    def LoadLocale(self, pkg):
+        return self.LoadXXX(pkg, "LOCALE", self.L)
+
+    def LoadXXX(self, pkg, funcName, D):
+        if not hasattr(pkg, funcName):
+            return True
+        try:
+            items = getattr(pkg, funcName)().items()
+            __x__ = getattr(pkg, "__%s__" % funcName)
+            for key, value in items:
+                if key in D:
+                    raise Exception
+                else:
+                    D[key] = value
+                    __x__.append(key)
+            return True
+        except Exception:
+            return False
+
+    # -------------------------------------------------------- #
+    def UnloadLinkage(self, pkg):
+        for link in pkg.ANCHORS:
+            LegitLink.Del(link[1], link[2] if len(link) > 2 else link[1], link[0])
+
+    def UnloadResource(self, pkg):
+        self.UnloadXXX(pkg, "RESOURCE", self.R)
+
+    def UnloadSetting(self, pkg):
+        self.UnloadXXX(pkg, "SETTING", self.S)
+
+    def UnloadLocale(self, pkg):
+        self.UnloadXXX(pkg, "LOCALE", self.L)
+
+    def UnloadXXX(self, pkg, funcName, D):
+        if hasattr(pkg, funcName):
+            __x__ = getattr(pkg, "__%s__" % funcName)
+            for key in __x__:
+                del D[key]
+
+    # -------------------------------------------------------- #
     def AddPackage(self, pkgName, pkg=None):
         try:
             if pkg is None:
                 pkg = importlib.import_module(pkgName)
-            if not self.LoadLinkage(pkg):
-                raise Exception
-            if not self.LoadFromFunction(pkg, "RESOURCE"):
-                raise Exception
-            if not self.LoadFromFunction(pkg, "SETTING"):
-                raise Exception
-            if not self.LoadFromFunction(pkg, "LOCALE"):
-                raise Exception
-            pkg.__WIDGETS__ = []  # [widget, ...]
-            pkg.__GROUPS__ = []  # ["pkgName/groupName", ...]
-            pkg.__ORI_GROUP__ = []  # ["pkgName/groupName", widget, widget, "pkgName/groupName", ...]
-            for row in pkg.WIDGETS:
-                if isinstance(row, str):
-                    group = self.L.Get("%s/%s" % (pkgName, row), "WIDGET_GROUP_")
-                    pkg.__ORI_GROUP__.append(group)
-                    pkg.__GROUPS__.append(group)
+        except Exception:
+            return False
+        pkg.__RESOURCE__ = []
+        pkg.__SETTING__ = []
+        pkg.__LOCALE__ = []
+        pkg.__WIDGET__ = []  # [widget, ...]
+        pkg.__GROUP__ = []  # ["pkgName/groupName", ...]
+        pkg.__RAW_GROUP__ = []  # ["pkgName/groupName", widget, widget, "pkgName/groupName", ...]
+        if not self.LoadLinkage(pkg):
+            self.UnloadLinkage(pkg)
+            return False
+        if not self.LoadResource(pkg):
+            self.UnloadResource(pkg)
+            return False
+        if not self.LoadSetting(pkg):
+            self.UnloadSetting(pkg)
+            return False
+        if not self.LoadLocale(pkg):
+            self.UnloadLocale(pkg)
+            return False
+        for row in pkg.WIDGETS:
+            if isinstance(row, str):
+                group = self.L.Get("%s/%s" % (pkgName, row), "WIDGET_GROUP_")
+                pkg.__GROUP__.append(group)
+                pkg.__RAW_GROUP__.append(group)
+            else:
+                if len(row) == 3:
+                    color, widget, icon = row
+                    icon = os.path.join(os.path.join(self.pathInstalled, pkgName), icon)
                 else:
-                    if len(row) == 3:
-                        color, widget, icon = row
-                        icon = os.path.join(os.path.join(self.pathInstalled, pkgName), icon)
-                    else:
-                        color, widget = row
-                        icon = None
-                    widget.__COLOR__ = color
-                    widget.__ICON__ = icon
-                    widget.__ID__ = "%s/%s" % (pkgName, widget.__name__)
-                    widget.NAME = self.L.Get(widget.NAME, "WIDGET_NAME_")
-                    pkg.__ORI_GROUP__.append(widget)
-                    pkg.__WIDGETS__.append(widget)
-        except Exception:
-            return False
-        else:
-            self.R.DrawWidgets(pkg.__WIDGETS__)
-            self.Packages[pkgName] = pkg
-            self.Widgets.update((widget.__ID__, widget) for widget in pkg.__WIDGETS__)
-            self.Groups.extend(pkg.__ORI_GROUP__)
-            return True
-
-    def LoadLinkage(self, pkg):
-        try:
-            LegitLink.AddBatch(pkg.ANCHORS)
-            return True
-        except LinkageRedefinedError:
-            LegitLink.DelBatch(pkg.ANCHORS)
-            return False
-        except Exception:
-            return False
-
-    def LoadFromFunction(self, pkg, funcName):
-        if not hasattr(pkg, funcName):
-            return True
-        try:
-            d = getattr(pkg, funcName).item()
-            for key, value in d:
-                if key in self.R:
-                    raise RedefinedError
-                else:
-                    self.R[key] = value
-            return True
-        except RedefinedError:
-            for key, value in d:
-                if key in self.R:
-                    del self.R[key]
-            return False
-        except Exception:
-            return False
+                    color, widget = row
+                    icon = None
+                widget.__COLOR__ = color
+                widget.__ICON__ = icon
+                widget.__ID__ = "%s/%s" % (pkgName, widget.__name__)
+                widget.NAME = self.L.Get(widget.NAME, "WIDGET_NAME_")
+                pkg.__WIDGET__.append(widget)
+                pkg.__RAW_GROUP__.append(widget)
+        self.R.DrawWidgets(pkg.__WIDGET__)
+        self.Packages[pkgName] = pkg
+        self.Widgets.update((widget.__ID__, widget) for widget in pkg.__WIDGET__)
+        self.Groups.extend(pkg.__RAW_GROUP__)
+        return True
 
     def DelPackage(self, pkgName):
         pkg = self.Packages[pkgName]
-        self.Gadget.DelItems(pkg.__ORI_GROUP__)
-        self.Manage.DelItems(pkg.__ORI_GROUP__)
+        self.Gadget.DelItems(pkg.__RAW_GROUP__)
+        self.Manage.DelItems(pkg.__RAW_GROUP__)
         del self.Packages[pkgName]
-        for widget in pkg.__WIDGETS__:
+        for widget in pkg.__WIDGET__:
             del self.Widgets[widget.__ID__]
             if widget in self.Groups:
                 self.Groups.remove(widget)
-        for group in pkg.__GROUPS__:
+        for group in pkg.__GROUP__:
             if group in self.Groups:
                 self.Groups.remove(group)
-        LegitLink.DelBatch(pkg.ANCHORS)
+        self.UnloadLinkage(pkg)
+        self.UnloadResource(pkg)
+        self.UnloadSetting(pkg)
+        self.UnloadLocale(pkg)
         shutil.rmtree(os.path.join(self.pathInstalled, pkgName))
 
+    # -------------------------------------------------------- #
     def Install(self, fp):
         pathTmp = UI.CreateRandomDirectory(self.pathTemporary)
         exist = []
@@ -188,8 +233,8 @@ class Manager(object):
                 shutil.move(os.path.join(pathTmp, pkgName), self.pathInstalled)
                 if self.AddPackage(pkgName):
                     done.append(pkgName)
-                    self.Gadget.AddItems(self.Packages[pkgName].__ORI_GROUP__)
-                    self.Manage.AddItems(self.Packages[pkgName].__ORI_GROUP__)
+                    self.Gadget.AddItems(self.Packages[pkgName].__RAW_GROUP__)
+                    self.Manage.AddItems(self.Packages[pkgName].__RAW_GROUP__)
                 else:
                     fail.append(pkgName)
                     shutil.rmtree(os.path.join(self.pathInstalled, pkgName))
