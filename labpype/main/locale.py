@@ -85,6 +85,9 @@ Locale.DEFAULT = {
     "MANAGE_PKG_BROWSE"   : "Install from disk",
     "MANAGE_PKG_REMOVE"   : "Remove selected package",
 
+    "MANAGE_HEAD_REMOTE"  : "Download from url",
+    "MANAGE_REMOTE_FAIL"  : "Fail to download from url:\n%s",
+
     "MANAGE_NEW_GROUP"    : "+ Add New Group +",
     "MANAGE_HELP_HEAD"    : "How to manage widgets",
     "MANAGE_HELP_TEXT"    : "To add widget, \n"

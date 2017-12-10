@@ -15,6 +15,7 @@ __all__ = [
     "BaseWidget",
     "Widget",
     "Thread",
+    "Interrupted",
     "Synced",
 ]
 
@@ -42,10 +43,14 @@ class Thread(threading.Thread):
         self.stop = False
         self.status = ""
 
+    def Stop(self):
+        self.stop = True
+
     def Checkpoint(self, status=""):
         if self.stop:
             raise Interrupted
         self.status = status
+        return True
 
 
 # ===================================================== BaseWidget =====================================================

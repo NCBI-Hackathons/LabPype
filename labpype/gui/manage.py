@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 
+import os
 import wx
+import threading
+import urllib.request
+import urllib.parse
 import DynaUI as UI
+from ..widget import Thread, Interrupted
 
 SIZE_S = wx.Size(80, 24)
 SIZE_B = wx.Size(200, 24)
@@ -19,6 +24,7 @@ class Main(UI.Scrolled):
     def __init__(self, parent):
         super().__init__(parent, edge=None)
         # MainFrame -> BaseDialog -> Main
+        parent.OnClose = self.OnClose
         self.MainFrame = self.GetGrandParent()
         self.M = self.MainFrame.M
         self.M.Manage = self
@@ -27,7 +33,7 @@ class Main(UI.Scrolled):
         SizerLeft = wx.BoxSizer(wx.VERTICAL)
         self.Installed = UI.ListCtrl(self, data=(), width=(-1,))
         SizerLeft.AddMany((
-            (self.Installed, 1, wx.EXPAND | wx.ALL, 4),  # TODO IMAGE
+            (self.Installed, 1, wx.EXPAND | wx.ALL, 4),
             (UI.ToolNormal(self, size=SIZE_B, pics=(self.R["AP_CLOUD"], "L", 8), tag=(self.L["MANAGE_PKG_REMOTE"], "L", 32), edge="D", func=self.OnRemote, showTag=True), SF_S),
             (UI.ToolNormal(self, size=SIZE_B, pics=(self.R["AP_LOCAL"], "L", 8), tag=(self.L["MANAGE_PKG_BROWSE"], "L", 32), edge="D", func=self.OnBrowse, showTag=True), SF_S),
             (UI.ToolNormal(self, size=SIZE_B, pics=(self.R["AP_TRASH"], "L", 8), tag=(self.L["MANAGE_PKG_REMOVE"], "L", 32), edge="D", func=self.OnRemove, showTag=True), SF_S),
@@ -85,14 +91,17 @@ class Main(UI.Scrolled):
         self.Installed.ReDraw()
 
     def OnRemote(self):
-        pass  # TODO
+        self.MainFrame.OnDialog("DOWNLOAD_PACKAGE", "MAKE_DIALOG", self.L["MANAGE_HEAD_REMOTE"], Downloader)
 
     def OnBrowse(self):
         fp = UI.ShowOpenFileDialog(self, self.L["MSG_PKG_INSTALL_HEAD"], "Zip files (*.zip)|*.zip")
         if fp is not None:
-            title, result = self.M.Install(fp)
-            self.MainFrame.OnDialog("PKG_LOAD_RESULT_%s" % fp, "SIMPLE_TEXT", title, result)
-            self.UpdatePackageList()
+            self.DoInstall(fp)
+
+    def DoInstall(self, fp):
+        title, result = self.M.Install(fp)
+        self.MainFrame.OnDialog("PKG_LOAD_RESULT_%s" % fp, "SIMPLE_TEXT", title, result)
+        self.UpdatePackageList()
 
     def OnRemove(self):
         if self.Installed.HasSelection():
@@ -108,7 +117,10 @@ class Main(UI.Scrolled):
         self.OnClose()
 
     def OnClose(self):
-        self.GetParent().Play("FADEOUT")
+        if "DOWNLOAD_PACKAGE" in self.MainFrame.Dialogs and self.MainFrame.Dialogs["DOWNLOAD_PACKAGE"]:
+            self.MainFrame.Dialogs["DOWNLOAD_PACKAGE"].SetFocus()
+        else:
+            self.GetParent().Play("FADEOUT")
 
     def OnApply(self):
         group = []
@@ -414,3 +426,75 @@ class Manage(UI.BaseDialog):
         self.Center()
         self.Layout()
         self.Play("FADEIN")
+
+
+# ===================================================== Downloader =====================================================
+TOY_URL = "https://github.com/yadizhou/LabPype-ToyWidget/"
+BLOCK_SIZE = 1024 * 8
+
+
+class Downloader(UI.BaseMain):
+    def __init__(self, parent):
+        super().__init__(parent, size=wx.Size(480, -1))
+        parent.OnClose = self.OnClose
+        self.MainFrame = self.GetGrandParent()
+        Sizer = wx.BoxSizer(wx.VERTICAL)
+        SubSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self["URL"] = self.AddLineCtrl(Sizer, hint=TOY_URL, width=-1)
+        self["STATUS"] = self.AddStaticText(SubSizer, width=320)
+        SubSizer.Add(4, 4, 1)
+        self.AddStdButton(SubSizer, onOK=self.OnOK, onCancel=self.OnClose)
+        Sizer.Add(SubSizer, 0, wx.EXPAND)
+        self.SetSizer(Sizer)
+        self.Thread = None
+        self.NewTimer("STATUS", self.OnUpdateStatus)
+
+    def OnOK(self):
+        url = self["URL"].GetValue() or TOY_URL
+        if not url.endswith("/"):
+            url += "/"
+        url = urllib.parse.urljoin(url, "zipball/master/")
+        self.StartTimer("STATUS", 50, wx.TIMER_CONTINUOUS)
+        self.Thread = Thread(target=self.Download, args=(url,))
+        self.Thread.start()
+
+    def Download(self, url):
+        thread = threading.currentThread()
+        filepath = None
+        try:
+            with urllib.request.urlopen(url) as response:
+                filename = response.headers["Content-Disposition"].partition("filename=")[-1]
+                filepath = os.path.join(self.MainFrame.M.pathDownloaded, filename)
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                total = int(response.headers["Content-Length"])
+                downloaded = 0
+                with open(filepath, "wb") as fo:
+                    while thread.Checkpoint("%s/%s" % (downloaded, total)):
+                        buffer = response.read(BLOCK_SIZE)
+                        if not buffer:
+                            break
+                        downloaded += fo.write(buffer)
+            wx.CallAfter(self.DownLoadFinish, filepath)
+        except Interrupted:
+            if filepath and os.path.exists(filepath):
+                os.remove(filepath)
+        except Exception as e:
+            print(str(e))
+            if filepath and os.path.exists(filepath):
+                os.remove(filepath)
+            wx.CallAfter(self.MainFrame.OnDialog, "DOWNLOAD_FAIL_%s" % url, "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MANAGE_REMOTE_FAIL"] % url)
+
+    def DownLoadFinish(self, fp):
+        self.MainFrame.Dialogs["MANAGE"].Main.DoInstall(fp)
+        self.OnClose()
+
+    def OnUpdateStatus(self):
+        if self.Thread.isAlive():
+            self["STATUS"].SetLabel(self.Thread.status)
+
+    def OnClose(self):
+        if self.Thread and self.Thread.isAlive():
+            self.Thread.stop = True
+            self.Thread.join()
+        self.Frame.Play("FADEOUT")

@@ -64,7 +64,9 @@ class Manager(object):
             if not os.path.exists(filename):
                 with open(filename, "wb") as f:
                     f.write(b"[]")
-            self.Groups = []
+                self.Groups = sum([self.Packages[pkgName].__RAW_GROUP__ for pkgName in self.Internal], [])
+            else:
+                self.Groups = []
             with open(filename, "r", encoding="utf-8") as f:
                 for key, value in json.load(f):
                     if value == "W" and key in self.Widgets:
@@ -94,8 +96,9 @@ class Manager(object):
     # -------------------------------------------------------- #
     def LoadLinkage(self, pkg):
         try:
-            for link in pkg.ANCHORS:
-                LegitLink.Add(link[1], link[2] if len(link) > 2 else link[1], link[0], *link[3:])
+            if hasattr(pkg, "ANCHORS"):
+                for link in pkg.ANCHORS:
+                    LegitLink.Add(link[1], link[2] if len(link) > 2 else link[1], link[0], *link[3:])
             return True
         except Exception:
             return False
@@ -127,8 +130,9 @@ class Manager(object):
 
     # -------------------------------------------------------- #
     def UnloadLinkage(self, pkg):
-        for link in pkg.ANCHORS:
-            LegitLink.Del(link[1], link[2] if len(link) > 2 else link[1], link[0])
+        if hasattr(pkg, "ANCHORS"):
+            for link in pkg.ANCHORS:
+                LegitLink.Del(link[1], link[2] if len(link) > 2 else link[1], link[0])
 
     def UnloadResource(self, pkg):
         self.UnloadXXX(pkg, "RESOURCE", self.R)
@@ -170,24 +174,29 @@ class Manager(object):
         if not self.LoadLocale(pkg):
             self.UnloadLocale(pkg)
             return False
-        for row in pkg.WIDGETS:
-            if isinstance(row, str):
-                group = self.L.Get("%s/%s" % (pkgName, row), "WIDGET_GROUP_")
-                pkg.__GROUP__.append(group)
-                pkg.__RAW_GROUP__.append(group)
-            else:
-                if len(row) == 3:
-                    color, widget, icon = row
-                    icon = os.path.join(os.path.join(self.pathInstalled, pkgName), icon)
+        if not hasattr(pkg, "WIDGETS"):
+            return False
+        try:
+            for row in pkg.WIDGETS:
+                if isinstance(row, str):
+                    group = self.L.Get("%s/%s" % (pkgName, row), "WIDGET_GROUP_")
+                    pkg.__GROUP__.append(group)
+                    pkg.__RAW_GROUP__.append(group)
                 else:
-                    color, widget = row
-                    icon = None
-                widget.__COLOR__ = color
-                widget.__ICON__ = icon
-                widget.__ID__ = "%s/%s" % (pkgName, widget.__name__)
-                widget.NAME = self.L.Get(widget.NAME, "WIDGET_NAME_")
-                pkg.__WIDGET__.append(widget)
-                pkg.__RAW_GROUP__.append(widget)
+                    if len(row) == 3:
+                        color, widget, icon = row
+                        icon = os.path.join(os.path.join(self.pathInstalled, pkgName), icon)
+                    else:
+                        color, widget = row
+                        icon = None
+                    widget.__COLOR__ = color
+                    widget.__ICON__ = icon
+                    widget.__ID__ = "%s/%s" % (pkgName, widget.__name__)
+                    widget.NAME = self.L.Get(widget.NAME, "WIDGET_NAME_")
+                    pkg.__WIDGET__.append(widget)
+                    pkg.__RAW_GROUP__.append(widget)
+        except Exception:
+            return False
         self.R.DrawWidgets(pkg.__WIDGET__)
         self.Packages[pkgName] = pkg
         self.Widgets.update((widget.__ID__, widget) for widget in pkg.__WIDGET__)
@@ -226,18 +235,7 @@ class Manager(object):
             return self.L["GENERAL_HEAD_FAIL"], self.L["MSG_PKG_EXTRACT_FAIL"] % fp
         if self.pathInstalled not in sys.path:
             sys.path.insert(0, self.pathInstalled)
-        for pkgName in os.listdir(pathTmp):
-            if os.path.exists(os.path.join(self.pathInstalled, pkgName)):
-                exist.append(pkgName)
-            else:
-                shutil.move(os.path.join(pathTmp, pkgName), self.pathInstalled)
-                if self.AddPackage(pkgName):
-                    done.append(pkgName)
-                    self.Gadget.AddItems(self.Packages[pkgName].__RAW_GROUP__)
-                    self.Manage.AddItems(self.Packages[pkgName].__RAW_GROUP__)
-                else:
-                    fail.append(pkgName)
-                    shutil.rmtree(os.path.join(self.pathInstalled, pkgName))
+        self.DoInstall(pathTmp, done, exist, fail)
         sys.path.remove(self.pathInstalled)
         shutil.rmtree(pathTmp)
         message = ""
@@ -248,3 +246,23 @@ class Manager(object):
         if fail:
             message += "%s\n    %s\n" % (self.L["MSG_PKG_INSTALL_FAIL"], ", ".join(fail))
         return self.L["MSG_PKG_INSTALL_HEAD"], message[:-1]
+
+    def DoInstall(self, path, done, exist, fail):
+        for pkgName in os.listdir(path):
+            fullPath = os.path.join(path, pkgName)
+            if not os.path.isdir(fullPath):
+                continue
+            if os.path.exists(os.path.join(fullPath, "__init__.py")):
+                if os.path.exists(os.path.join(self.pathInstalled, pkgName)):
+                    exist.append(pkgName)
+                else:
+                    shutil.move(fullPath, self.pathInstalled)
+                    if self.AddPackage(pkgName):
+                        done.append(pkgName)
+                        self.Gadget.AddItems(self.Packages[pkgName].__RAW_GROUP__)
+                        self.Manage.AddItems(self.Packages[pkgName].__RAW_GROUP__)
+                    else:
+                        fail.append(pkgName)
+                        shutil.rmtree(os.path.join(self.pathInstalled, pkgName))
+            else:
+                self.DoInstall(fullPath, done, exist, fail)

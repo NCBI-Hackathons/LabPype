@@ -34,7 +34,6 @@ class NewConfirm(UI.BaseMain):
     def __init__(self, parent):
         super().__init__(parent)
         self.MainFrame = self.GetGrandParent()
-        self.MainFrame.Disable()
         self.Frame.OnClose = self.OnClose
         Sizer = wx.BoxSizer(wx.VERTICAL)
         self.AddStaticText(Sizer, value=self.L["DIALOG_NEW?_INFO"])
@@ -42,7 +41,6 @@ class NewConfirm(UI.BaseMain):
         self.SetSizer(Sizer)
 
     def OnClose(self):
-        self.MainFrame.Enable()
         self.MainFrame.Tool["TOOL_FILE_N"].Play("LEAVE_WHEN_CLICKED")
         self.Frame.Play("FADEOUT")
 
