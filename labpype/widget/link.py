@@ -26,6 +26,10 @@ class ANCHOR_NONE(ANCHOR_SPECIAL):
     pass
 
 
+def IdentityFunction(x):
+    return x
+
+
 class _LegitLink(object):
     _SharedState = {}
 
@@ -46,7 +50,7 @@ class _LegitLink(object):
             return a2.GetType() in self.links.get(a1.GetType(), {})
         return False
 
-    def Add(self, source, target, reverse=False, onTransferForward=lambda x: x, onTransferReverse=lambda x: x):
+    def Add(self, source, target, reverse=False, onTransferForward=IdentityFunction, onTransferReverse=IdentityFunction):
         if source is target:
             reverse = False
         if source not in self.links:
@@ -69,7 +73,7 @@ class _LegitLink(object):
             self.Del(target, source, False)
 
     def Transfer(self, source, target):
-        return self.links[source][target]
+        return self.links.get(source, IdentityFunction).get(target, IdentityFunction)
 
 
 LegitLink = _LegitLink()

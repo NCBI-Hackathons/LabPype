@@ -11,23 +11,21 @@ SF_PANEL = wx.SizerFlags().Expand().Border(wx.BOTTOM, 6)
 class Gadget(UI.Scrolled):
     def __init__(self, parent, size):
         super().__init__(parent, size=size, edge="H")
-        self.MainFrame = parent
-        self.M = parent.M
-        self.M.Gadget = self
+        self.F = parent
         self.AddScrollBar((0, 12))
         self.Tool = UI.Tool(self, size=wx.Size(-1, 26), itemSize=wx.Size(24, 24), bg="D", edge="EM")
         self.Tool.SizerFlags1 = wx.SizerFlags().Expand().Border(wx.TOP | wx.BOTTOM, 1)
         self.Tool.SizerFlags2 = wx.SizerFlags().Center().Border(wx.TOP | wx.BOTTOM, 1)
         self.Tool.AddItems(1,
-                           ("T", "TOOL_T_SHOW", self.OnGroup, {"toggle": self.S["TOGGLE_GADGET_GROUP"]}),
-                           ("T", "TOOL_T_TEXT", self.OnLabel, {"toggle": self.S["TOGGLE_GADGET_LABEL"]}), "|", "|",
-                           ("N", "TOOL_MANAGE", (parent.OnDialog, "MANAGE", "MANAGE")),
+                           ("T", "TOOL_T_SHOW", self.OnGroup, {"toggle": self.S["TOGGLE_G_GROUP"]}),
+                           ("T", "TOOL_T_TEXT", self.OnLabel, {"toggle": self.S["TOGGLE_G_LABEL"]}), "|", "|",
+                           ("N", "TOOL_MANAGE", parent.OnShowManage),
                            1)
         self.Tool["GADGET_SEARCH"] = UI.Text(self.Tool, size=wx.Size(-1, 20), style=wx.BORDER_NONE)
         self.Tool["GADGET_SEARCH"].Bind(wx.EVT_TEXT, self.OnSearch)
-        self.Tool["GADGET_SEARCH"].Bind(wx.EVT_ENTER_WINDOW, lambda evt: self.MainFrame.SetStatus(self.L["GADGET_SEARCH"]))
+        self.Tool["GADGET_SEARCH"].Bind(wx.EVT_ENTER_WINDOW, lambda evt: self.F.SetStatus(self.L["GADGET_SEARCH"]))
         self.Tool["GADGET_CANCEL"] = UI.Button(self.Tool, size=wx.Size(24, 24), tag="x", edge=None, func=self.OnCancel)
-        self.Tool["GADGET_CANCEL"].SetTip(self.MainFrame.SetStatus, self.L["GADGET_CANCEL"])
+        self.Tool["GADGET_CANCEL"].SetTip(self.F.SetStatus, self.L["GADGET_CANCEL"])
         self.Tool.GetSizer().Insert(4, self.Tool["GADGET_CANCEL"], self.Tool.SizerFlags2)
         self.Tool.GetSizer().Insert(4, self.Tool["GADGET_SEARCH"], 1, wx.ALIGN_BOTTOM | wx.TOP | wx.BOTTOM, 1)
         self.Outer = wx.Panel(self)
@@ -64,8 +62,8 @@ class Gadget(UI.Scrolled):
 
     # --------------------------------------
     def AddItems(self, args):
-        itemSize = wx.Size(120, 48) if self.S["TOGGLE_GADGET_LABEL"] else wx.Size(40, 48)
-        prefix = " ■ " if self.S["TOGGLE_GADGET_GROUP"] else " □ "
+        itemSize = wx.Size(120, 48) if self.S["TOGGLE_G_LABEL"] else wx.Size(40, 48)
+        pic = self.R["AP_ABORT" if self.S["TOGGLE_G_GROUP"] else "AP_MINI"][0]
         sizer = self.Inner.GetSizer()
         group = self.L["GROUP_NONE"]
         groupSizer = None
@@ -77,16 +75,16 @@ class Gadget(UI.Scrolled):
                     groupSizer = self.Groups[group]["PANEL"].GetSizer()
                 else:
                     groupSizer = wx.WrapSizer()
-                    title = UI.Button(self.Inner, size=wx.Size(-1, 20), tag=(prefix + group, "L"), func=(self.OnGroup, group))
-                    title.SetTip(self.MainFrame.SetStatus, group)
+                    title = UI.Button(self.Inner, size=wx.Size(-1, 20), tag=(group, "L", 20), pic=(pic, "L"), func=(self.OnGroup, group), fg="B")
+                    title.SetTip(self.F.SetStatus, group)
                     panel = UI.BaseControl(self.Inner)
                     panel.SetSizer(groupSizer)
-                    panel.Show(self.S["TOGGLE_GADGET_GROUP"])
+                    panel.Show(self.S["TOGGLE_G_GROUP"])
                     sizer.AddMany(((title, SF_TITLE), (panel, SF_PANEL)))
-                    self.Groups[group] = {"TITLE": title, "PANEL": panel, "SHOW": self.S["TOGGLE_GADGET_GROUP"], "ITEMS": []}
+                    self.Groups[group] = {"TITLE": title, "PANEL": panel, "SHOW": self.S["TOGGLE_G_GROUP"], "ITEMS": []}
             else:
                 item = GadgetItem(self.Groups[group]["PANEL"], item=arg, size=itemSize)
-                item.SetTip(self.MainFrame.SetStatus, arg.NAME)
+                item.SetTip(self.F.SetStatus, arg.NAME)
                 groupSizer.Add(item)
                 self.Groups[group]["ITEMS"].append(item)
         self.Inner.Layout()
@@ -97,11 +95,11 @@ class Gadget(UI.Scrolled):
         self.Freeze()
         for arg in args:
             if not isinstance(arg, str):
-                if arg in self.M.Groups:
+                if arg in self.F.M.Groups:
                     group = self.L["GROUP_NONE"]
-                    for i in range(self.M.Groups.index(arg), -1, -1):
-                        if isinstance(self.M.Groups[i], str):
-                            group = self.M.Groups[i]
+                    for i in range(self.F.M.Groups.index(arg), -1, -1):
+                        if isinstance(self.F.M.Groups[i], str):
+                            group = self.F.M.Groups[i]
                             break
                     item = [i for i in self.Groups[group]["ITEMS"] if i.Item is arg][0]
                     item.Destroy()
@@ -138,7 +136,7 @@ class Gadget(UI.Scrolled):
             for group in self.Groups:
                 for item in self.Groups[group]["ITEMS"]:
                     item.Show(True)
-                self.DoToggleGroup(group, self.S["TOGGLE_GADGET_GROUP"])
+                self.DoToggleGroup(group, self.S["TOGGLE_G_GROUP"])
         self.Inner.Layout()
         self.SetActualSize()
         self.Thaw()
@@ -149,9 +147,9 @@ class Gadget(UI.Scrolled):
     def OnGroup(self, group=None):
         self.Freeze()
         if group is None:
-            self.S["TOGGLE_GADGET_GROUP"] = not self.S["TOGGLE_GADGET_GROUP"]
+            self.S["TOGGLE_G_GROUP"] = not self.S["TOGGLE_G_GROUP"]
             for group in self.Groups:
-                self.DoToggleGroup(group, self.S["TOGGLE_GADGET_GROUP"])
+                self.DoToggleGroup(group, self.S["TOGGLE_G_GROUP"])
         else:
             self.DoToggleGroup(group, not self.Groups[group]["SHOW"])
         self.Inner.Layout()
@@ -161,11 +159,11 @@ class Gadget(UI.Scrolled):
     def DoToggleGroup(self, group, show):
         self.Groups[group]["SHOW"] = show
         self.Groups[group]["PANEL"].Show(show)
-        self.Groups[group]["TITLE"].SetTag((" □ ", " ■ ")[show] + group)
+        self.Groups[group]["TITLE"].SetPic(self.R["AP_ABORT" if show else "AP_MINI"][0])
 
     def OnLabel(self):
-        self.S["TOGGLE_GADGET_LABEL"] = not self.S["TOGGLE_GADGET_LABEL"]
-        size = (120 if self.S["TOGGLE_GADGET_LABEL"] else 40, 48)
+        self.S["TOGGLE_G_LABEL"] = not self.S["TOGGLE_G_LABEL"]
+        size = (120 if self.S["TOGGLE_G_LABEL"] else 40, 48)
         self.Freeze()
         for group in self.Groups:
             for item in self.Groups[group]["ITEMS"]:

@@ -11,26 +11,20 @@ from ..gui.record import Record
 from ..gui.gadget import Gadget
 from ..gui.harbor import Harbor
 from ..gui.manage import Manage
-from ..gui.dialog import ShowSimpleText, MakeDialog, NewConfirm, SaveDialog, LoadDialog
+from ..gui.dialog import SimpleDialog, MakeDialog, SaveDialog, LoadDialog
 
 __all__ = ["MainFrame"]
 
 
 class MainFrame(wx.Frame):
-    DIALOGS = {
-        "MANAGE"     : Manage,
-        "SIMPLE_TEXT": ShowSimpleText,
-        "MAKE_DIALOG": MakeDialog,
-    }
-
     def __init__(self, r, s, l, m):
         super().__init__(parent=None, title=l["TITLE"], pos=s["LAST_POS"], size=s["LAST_SIZE"], style=wx.DEFAULT_FRAME_STYLE | wx.FULL_REPAINT_ON_RESIZE)
         self.R = r
         self.S = s
         self.L = l
         self.M = m
+        self.D = {}
         self.T = {"LAST_FILE": "", }
-        self.Dialogs = {}
 
         self.SetStatus = UI.DoNothing
         self.SetDoubleBuffered(True)
@@ -45,21 +39,26 @@ class MainFrame(wx.Frame):
         self.Info = UI.Info(self, edge=("T", ""))
         self.Gadget = Gadget(self, size=wx.Size(self.S["WIDTH_GADGET"], -1))
         self.Canvas = Canvas(self)
-        self.Record = Record(self, size=wx.Size(-1, self.S["HEIGHT_RECORD"]))
         self.Harbor = Harbor(self, size=wx.Size(self.S["WIDTH_HARBOR"], -1))
+        self.Manage = None
 
-        self.SashC = UI.Sash(self, target=self.Record, direction="B", vRange=(0, 250), edge=("", "T"), res="L")
+        self.Center = UI.BaseControl(self, size=wx.Size(-1, self.S["HEIGHT_CENTER"]), edge=("LR", ""))
+        self.Record = Record(self.Center)
+
+        self.SashC = UI.Sash(self, target=self.Center, direction="B", vRange=(0, 250), edge=("LR", "T"))
         self.SashL = UI.Sash(self, target=self.Gadget, direction="L", vRange=(0, 350), edge=("T", "RB"))
         self.SashR = UI.Sash(self, target=self.Harbor, direction="R", vRange=(0, 600), edge=("T", "LB"))
-        self.HiderL = UI.Hider(self, targets=(self.Gadget, self.SashL))
-        self.HiderR = UI.Hider(self, targets=(self.Harbor, self.SashR))
+        self.HiderC = UI.Hider(self, targets=(self.Center, self.SashC), orientation="H", edge=("LR", "B"))
+        self.HiderL = UI.Hider(self, targets=(self.Gadget, self.SashL), edge="H")
+        self.HiderR = UI.Hider(self, targets=(self.Harbor, self.SashR), edge="H")
+        self.HiderC.SetTip(self.SetStatus, self.L["HIDER_CENTER"])
         self.HiderL.SetTip(self.SetStatus, self.L["HIDER_GADGET"])
         self.HiderR.SetTip(self.SetStatus, self.L["HIDER_HARBOR"])
 
         self.AcceleratorEntries = []
         for flags, keyCode, func in (
                 (wx.ACCEL_NORMAL, wx.WXK_F3, self.HiderL.Click),
-                (wx.ACCEL_NORMAL, wx.WXK_F4, lambda evt: self.Record.Minimize()),
+                (wx.ACCEL_NORMAL, wx.WXK_F4, self.HiderC.Click),
                 (wx.ACCEL_NORMAL, wx.WXK_F5, self.HiderR.Click),
                 (wx.ACCEL_CTRL, ord("F"), lambda evt: self.Gadget.Tool["GADGET_SEARCH"].SetFocus()),
                 (wx.ACCEL_CTRL, ord("D"), self.Gadget.Tool["GADGET_CANCEL"].Click),
@@ -76,8 +75,8 @@ class MainFrame(wx.Frame):
             ("N", "TOOL_OPTION", self.OnOption, wx.ACCEL_CTRL | wx.ACCEL_ALT, ord("S")),
             "|",
             ("N", "TOOL_FILE_N", self.OnNew, wx.ACCEL_CTRL, ord("N")),
-            ("N", "TOOL_FILE_O", (self.OnDialog, "L", MakeDialog, self.L["DIALOG_HEAD_LOAD"], LoadDialog, {"buttons": False}), wx.ACCEL_CTRL, ord("O")),
-            ("N", "TOOL_FILE_S", (self.OnDialog, "S", MakeDialog, self.L["DIALOG_HEAD_SAVE"], SaveDialog, {"buttons": False}), wx.ACCEL_CTRL, ord("S")),
+            ("N", "TOOL_FILE_O", (self.OnMakeDialog, "DIALOG_HEAD_LOAD", LoadDialog, {"buttons": False}), wx.ACCEL_CTRL, ord("O")),
+            ("N", "TOOL_FILE_S", (self.OnMakeDialog, "DIALOG_HEAD_SAVE", SaveDialog, {"buttons": False}), wx.ACCEL_CTRL, ord("S")),
             "|",
             ("T", "TOOL_T_ANCR", (self.OnToggle, "TOGGLE_ANCR"), wx.ACCEL_NORMAL, wx.WXK_F6, {"toggle": self.S["TOGGLE_ANCR"]}),
             ("T", "TOOL_T_NAME", (self.OnToggle, "TOGGLE_NAME"), wx.ACCEL_NORMAL, wx.WXK_F7, {"toggle": self.S["TOGGLE_NAME"]}),
@@ -101,20 +100,25 @@ class MainFrame(wx.Frame):
             ("N", "TOOL_MOVE_D", (self.Canvas.AlterLayer, "D"), wx.ACCEL_CTRL, wx.WXK_NUMPAD1),
             ("N", "TOOL_MOVE_B", (self.Canvas.AlterLayer, "B"), wx.ACCEL_CTRL, wx.WXK_NUMPAD3),
             "|",
-            ("N", "TOOL_CANCEL", self.OnCancelAllDialog, wx.ACCEL_CTRL, wx.WXK_DELETE, {"res": "R"}),
+            ("N", "TOOL_CANCEL", self.OnDismissAllDialog, wx.ACCEL_CTRL, wx.WXK_DELETE, {"res": "R"}),
             ("N", "TOOL_DELETE", self.Canvas.DeleteSelected, wx.ACCEL_NORMAL, wx.WXK_DELETE, {"res": "R"}),
         )
-        self.Info.AddItems((wx.StaticText(self.Info, size=(266, 16)), 0),
+        self.Info.AddItems((wx.StaticText(self.Info, size=(268, 16)), 0),
                            (wx.StaticText(self.Info, size=(-1, 16)), 1),
-                           (wx.StaticText(self.Info, size=(266, 16)), 0))
+                           (wx.StaticText(self.Info, size=(268, 16)), 0))
 
         self.SetAcceleratorTable(wx.AcceleratorTable(self.AcceleratorEntries))
+
+        CenterSizer = wx.BoxSizer(wx.HORIZONTAL)
+        CenterSizer.Add(self.Record, 1, wx.EXPAND | wx.ALL, 1)
+        self.Center.SetSizer(CenterSizer)
 
         MiddleSizer = wx.BoxSizer(wx.VERTICAL)
         MiddleSizer.AddMany((
             (self.Canvas, 1, wx.EXPAND),
             (self.SashC, 0, wx.EXPAND),
-            (self.Record, 0, wx.EXPAND),))
+            (self.Center, 0, wx.EXPAND),
+            (self.HiderC, 0, wx.EXPAND),))
         MainSizer = wx.BoxSizer(wx.HORIZONTAL)
         MainSizer.AddMany((
             (self.HiderL, 0, wx.EXPAND),
@@ -132,21 +136,15 @@ class MainFrame(wx.Frame):
         self.SetSizer(FrameSizer)
         self.Layout()
         if not self.S["SHOW_GADGET"]:
-            self.Gadget.Hide()
-            self.SashL.Hide()
-            self.HiderL.show = False
+            self.HiderL.OnHider()
         if not self.S["SHOW_HARBOR"]:
-            self.Harbor.Hide()
-            self.SashR.Hide()
-            self.HiderR.show = False
+            self.HiderR.OnHider()
+        if not self.S["SHOW_CENTER"]:
+            self.HiderC.OnHider()
 
-        self.M.SetRSL(r, s, l)
-        failed = self.M.Init()
-        if failed:
-            self.OnDialog("MSG_PKG_INIT_FAIL", "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MSG_PKG_INIT_FAIL"] % ",".join(failed))
-        self.Gadget.AddItems(self.M.Groups)
+        self.M.Init(self)
 
-    # ======================================
+    # --------------------------------------
     def OnToggle(self, key):
         self.S[key] = not self.S[key]
         self.Canvas.ReDraw()
@@ -159,29 +157,53 @@ class MainFrame(wx.Frame):
         self.ShowFullScreen(not self.IsFullScreen())
 
     def OnToggleDialogSize(self):
-        for dialog in wx.GetTopLevelWindows():
-            if isinstance(dialog, UI.BaseDialog) and self.Tool["TOOL_T_DIAG"].Toggle != bool(dialog.minimized):
-                dialog.OnMinimize()
+        t = self.Tool["TOOL_T_DIAG"].IsToggled()
+        for w in self.Canvas.Widget:
+            if w.Dialog:
+                if w.Dialog.detached:
+                    if t != bool(w.Dialog.Frame.minimized):
+                        w.Dialog.Frame.OnMinimize()
+                else:
+                    if t == w.Dialog.IsShown():
+                        self.Harbor.OnChild(w.Dialog)
 
-    def OnCancelAllDialog(self):
-        for dialog in wx.GetTopLevelWindows():
-            if isinstance(dialog, UI.BaseDialog) and dialog.Main:
-                dialog.OnClose()
+    def OnDismissAllDialog(self):
+        for w in self.Canvas.Widget:
+            if w.Dialog and w.Dialog.detached:
+                w.Dialog.Frame.OnClose()
 
-    def OnDialog(self, key, dialog, *args):
-        if self.Dialogs.get(key):
-            return self.Dialogs[key].SetFocus()
-        if isinstance(dialog, str):
-            self.Dialogs[key] = self.DIALOGS[dialog](self, *args)
+    # --------------------------------------
+    def OnSimpleDialog(self, titleKey, textKey, titleData=None, textData=None, onOK=None, unique=False):
+        title = self.L[titleKey] if titleData is None else (self.L[titleKey] % titleData)
+        text = self.L[textKey] if textData is None else (self.L[textKey] % textData)
+        if unique:
+            if self.D.get(textKey):
+                self.D[textKey].SetFocus()
+            else:
+                self.D[textKey] = SimpleDialog(self, title, text, onOK)
         else:
-            self.Dialogs[key] = dialog(self, *args)
+            SimpleDialog(self, title, text, onOK)
 
-    def OnOption(self):
-        pass  # TODO
+    def OnMakeDialog(self, titleKey, main, head=None, unique=True):
+        title = self.L[titleKey]
+        if unique:
+            if self.D.get(titleKey):
+                self.D[titleKey].SetFocus()
+            else:
+                self.D[titleKey] = MakeDialog(self, title, main, head)
+        else:
+            MakeDialog(self, title, main, head)
 
+    def OnShowManage(self):
+        if self.Manage:
+            self.Manage.SetFocus()
+        else:
+            self.Manage = Manage(self).Main
+
+    # --------------------------------------
     def OnNew(self):
         if self.Canvas.Widget:
-            MakeDialog(self, self.L["DIALOG_HEAD_NEW?"], NewConfirm, {"buttons": False})
+            self.OnSimpleDialog("DIALOG_HEAD_NEW?", "DIALOG_NEW?_INFO", onOK=self.OnClear, unique=True)
         else:
             self.OnClear()
 
@@ -190,7 +212,6 @@ class MainFrame(wx.Frame):
         self.Record.ClearAll()
         self.T["LAST_FILE"] = ""
 
-    # --------------------------------------
     def GetScheme(self):
         return {w.Id: (w.__ID__,
                        w.GetPosition(),
@@ -227,7 +248,7 @@ class MainFrame(wx.Frame):
             self.NewHistory(fp)
             return True
         except Exception:
-            self.OnDialog("MSG_SAVE_FILE_FAILED", "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MSG_SAVE_FILE_FAILED"])
+            self.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_SAVE_FILE_FAILED")
             return False
 
     def OnLoad(self, fp, append, schemeOnly):
@@ -239,11 +260,11 @@ class MainFrame(wx.Frame):
                 with z.open("_") as f:
                     data = json.load(io.TextIOWrapper(f, "utf-8"))  # b -> utf-8 -> str -> scheme
                 if len(data) + (len(self.Canvas.Widget) if append else 0) > 255:
-                    self.OnDialog("MSG_TOO_MANY_WIDGETS", "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MSG_TOO_MANY_WIDGETS"])
+                    self.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_TOO_MANY_WIDGETS")
                     return False
                 for wId in data:
                     if data[wId][0] not in self.M.Widgets:
-                        self.OnDialog("MSG_UNKNOWN_WIDGET", "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MSG_UNKNOWN_WIDGET"] % data[wId][0])
+                        self.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_UNKNOWN_WIDGET", textData=data[wId][0])
                         return False
                 if not append:
                     self.OnClear()
@@ -258,12 +279,11 @@ class MainFrame(wx.Frame):
             self.NewHistory(fp)
             return True
         except Exception:
-            self.OnDialog("MSG_LOAD_FILE_FAILED", "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MSG_LOAD_FILE_FAILED"])
+            self.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_LOAD_FILE_FAILED")
             return False
         finally:
             self.Canvas.Thaw()
 
-    # --------------------------------------
     def NewHistory(self, fp):
         key = "HISTORY_SCHEME" if fp.lower().endswith(".pas") else "HISTORY_PROJECT"
         if fp in self.S[key]:
@@ -271,6 +291,10 @@ class MainFrame(wx.Frame):
         self.S[key].insert(0, fp)
         self.S[key] = self.S[key][:8]
         self.T["LAST_FILE"] = fp
+
+    # --------------------------------------
+    def OnOption(self):
+        pass  # TODO
 
     # --------------------------------------
     def OnClose(self, evt):
@@ -285,9 +309,10 @@ class MainFrame(wx.Frame):
         self.S["MAXIMIZED"] = self.IsMaximized()
         self.S["SHOW_GADGET"] = self.Gadget.IsShown()
         self.S["SHOW_HARBOR"] = self.Harbor.IsShown()
+        self.S["SHOW_CENTER"] = self.Center.IsShown()
         self.S["WIDTH_GADGET"] = self.Gadget.GetSize()[0]
         self.S["WIDTH_HARBOR"] = self.Harbor.GetSize()[0]
-        self.S["HEIGHT_RECORD"] = self.Record.GetSize()[1]
+        self.S["HEIGHT_CENTER"] = self.Center.GetSize()[1]
         self.S.Save()
         self.M.Save()
         evt.Skip()

@@ -68,11 +68,5 @@
   "MANAGE_PKG_REMOVE": "Remove selected package",
   "MANAGE_NEW_GROUP": "+ 添加新组 +",
   "MANAGE_HELP_HEAD": "如何管理组件",
-  "MANAGE_HELP_TEXT": "TODO",
-  "MSG_PKG_INIT_FAIL": "The following package(s) cannot be loaded:\n%s",
-  "MSG_PKG_INSTALL_HEAD": "Package install",
-  "MSG_PKG_EXTRACT_FAIL": "Failed to extract %s",
-  "MSG_PKG_INSTALL_DONE": "The following packages have been successfully installed:",
-  "MSG_PKG_INSTALL_FAIL": "The following packages cannot be installed:",
-  "MSG_PKG_ALREADY_HERE": "The following packages are already installed:"
+  "MANAGE_HELP_TEXT": "TODO"
 }

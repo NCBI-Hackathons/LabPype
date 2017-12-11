@@ -77,8 +77,8 @@ class DetachedHead(UI.BaseHead):
 
 # ==================================================== AttachedHead ====================================================
 class AttachedHead(UI.Button):
-    def __init__(self, parent, tag, func):
-        super().__init__(parent=parent, size=(-1, 20), tag=tag, func=func, fg="B", edge="D", res="R")
+    def __init__(self, parent, tag, pic, func):
+        super().__init__(parent=parent, size=(-1, 20), tag=(tag, "L", 20), pic=(pic, "L"), func=func, fg="B", edge="D", res="R")
         Sizer = wx.BoxSizer(wx.HORIZONTAL)
         Sizer.AddMany((
             (4, 4, 1),
@@ -198,7 +198,7 @@ class Dialog(UI.BaseMain):
             if not self.IsShown():
                 self.Show()
             self.Reparent(self.Harbor.Inner)
-            self.Head = AttachedHead(self.Harbor.Inner, tag=(" ■ " + self.Widget.NAME, "L"), func=(self.Harbor.OnChild, self))
+            self.Head = AttachedHead(self.Harbor.Inner, tag=self.Widget.NAME, pic=self.R["AP_ABORT"][0], func=(self.Harbor.OnChild, self))
             self.Sash = UI.Sash(self.Harbor.Inner, target=self, direction="T", vRange=(2, 600), func=((self.Harbor.SetActualSize,), self.Harbor.Inner.Layout, self.Harbor.ReDraw), res="D")
             self.Harbor.Inner.GetSizer().AddMany((
                 (self.Head, SF_HEAD),

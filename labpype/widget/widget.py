@@ -303,6 +303,8 @@ class BaseWidget(Base):
                 if self.Dialog.Frame.minimized:
                     self.Dialog.Frame.OnMinimize()
             else:
+                if not self.Canvas.F.Harbor.IsShown():
+                    self.Canvas.F.HiderR.Click()
                 self.Dialog.Head.Play("ENTER_THEN_LEAVE")
             self.Dialog.SetFocus()
         elif self.DIALOG:

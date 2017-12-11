@@ -13,13 +13,14 @@ MOCK_RECT = wx.Rect(0, 0, 0, 0)
 class Canvas(UI.BaseControl):
     def __init__(self, parent):
         super().__init__(parent, style=wx.WANTS_CHARS, font=parent.R["FONT_CANVAS"], bg="B", fg="B", fpsLimit=60)
+        self.F = parent
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouse)
         self.NewAnimation("LOCATE", 50, self.ToggleSelect, (), False)
         self.NewTimer("_WIDGET_UPDATE_", lambda: self.ReDraw() if self.widgetRunning else None)
-        self.NewTimer("_HIDDEN_BITMAP_", self.ReDrawHidden)
-        self.NewTimer("_HIDDEN_BITMAP_FORCE_DRAW_", self.ReDrawHidden)
-        self.SetStatus = parent.SetStatus
+        self.NewTimer("_HIDDEN_RESIZE_", self.ReSizeHidden)
+        self.NewTimer("_HIDDEN_REDRAW_", self.ReDrawHidden)
+        self.NewTimer("_HIDDEN_FORCE_DRAW_", self.ReDrawHidden)
         if self.S["TOGGLE_CURV"]:
             self.DrawLink1 = DrawCurve
             self.DrawLink2 = DrawCurve2
@@ -47,12 +48,12 @@ class Canvas(UI.BaseControl):
         self.Link = {}
 
         self.StartTimer("_WIDGET_UPDATE_", 500, wx.TIMER_CONTINUOUS)
+        self.ReSizeHidden()
 
     def OnSize(self, evt):
         w, h = evt.GetSize()
-        self.hiddenBitmap = wx.Bitmap(w, h)
-        self.hiddenImage = self.hiddenBitmap.ConvertToImage()
         self.borderPoints = (0, 0), (0, h - 1), (w - 1, h - 1), (w - 1, 0), (0, 0)
+        self.StartTimer("_HIDDEN_RESIZE_", 100, wx.TIMER_ONE_SHOT)
         evt.Skip()
 
     def ToggleLinkType(self):
@@ -95,10 +96,10 @@ class Canvas(UI.BaseControl):
     # ----------------------------------------------
     def AddWidget(self, W, pos=(20, 20)):
         if len(self.Widget) > 255:
-            self.GetParent().OnDialog("MSG_TOO_MANY_WIDGETS", "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MSG_TOO_MANY_WIDGETS"])
+            self.F.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_TOO_MANY_WIDGETS")
             return
         if isinstance(W.SINGLETON, W):
-            self.GetParent().OnDialog("MSG_SINGLETON_EXISTS", "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MSG_SINGLETON_EXISTS"])
+            self.F.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_SINGLETON_EXISTS")
             return
         w = W(self)
         w.SetPosition(*pos)
@@ -321,13 +322,13 @@ class Canvas(UI.BaseControl):
         if self.Hovered != newObj:
             self.Hovered = newObj
             if isinstance(newObj, BaseWidget):
-                self.SetStatus(newObj.name)
+                self.F.SetStatus(newObj.name)
             elif isinstance(newObj, Anchor):
-                self.SetStatus(newObj.GetName())
+                self.F.SetStatus(newObj.GetName())
             elif isinstance(newObj, tuple):
-                self.SetStatus("[%s].[%s] --> [%s].[%s]" % (newObj[0].Widget.NAME, newObj[0].name, newObj[1].Widget.NAME, newObj[1].name), 1)
+                self.F.SetStatus("[%s].[%s] --> [%s].[%s]" % (newObj[0].Widget.NAME, newObj[0].name, newObj[1].Widget.NAME, newObj[1].name), 1)
             else:
-                self.SetStatus("")
+                self.F.SetStatus("")
             return True
 
     # ----------------------------------------------
@@ -420,12 +421,17 @@ class Canvas(UI.BaseControl):
         dc.DrawLines(self.borderPoints)
 
         # Finish
-        self.StartTimer("_HIDDEN_BITMAP_", 100, wx.TIMER_ONE_SHOT)
-        if not self.Timers["_HIDDEN_BITMAP_FORCE_DRAW_"].IsRunning():
-            self.StartTimer("_HIDDEN_BITMAP_FORCE_DRAW_", 1000, wx.TIMER_ONE_SHOT)
+        self.StartTimer("_HIDDEN_REDRAW_", 100, wx.TIMER_ONE_SHOT)
+        if not self.Timers["_HIDDEN_FORCE_DRAW_"].IsRunning():
+            self.StartTimer("_HIDDEN_FORCE_DRAW_", 1000, wx.TIMER_ONE_SHOT)
+
+    def ReSizeHidden(self):
+        w, h = self.GetSize()
+        self.hiddenBitmap = wx.Bitmap(w, h)
+        self.hiddenImage = self.hiddenBitmap.ConvertToImage()
 
     def ReDrawHidden(self):
-        self.StopTimer("_HIDDEN_BITMAP_FORCE_DRAW_")
+        self.StopTimer("_HIDDEN_FORCE_DRAW_")
         mdc = wx.MemoryDC()
         mdc.SelectObject(self.hiddenBitmap)
         mdc.SetBackground(wx.BLACK_BRUSH)

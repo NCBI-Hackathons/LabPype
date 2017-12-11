@@ -23,11 +23,8 @@ SF_NEW = wx.SizerFlags().Expand().Border(wx.ALL, 4)
 class Main(UI.Scrolled):
     def __init__(self, parent):
         super().__init__(parent, edge=None)
-        # MainFrame -> BaseDialog -> Main
         parent.OnClose = self.OnClose
-        self.MainFrame = self.GetGrandParent()
-        self.M = self.MainFrame.M
-        self.M.Manage = self
+        self.F = parent.GetParent()  # MainFrame -> BaseDialog -> Main
         self.AddScrollBar((0, 12))
 
         SizerLeft = wx.BoxSizer(wx.VERTICAL)
@@ -66,8 +63,8 @@ class Main(UI.Scrolled):
         self.newGroupIndex = 1
         self["NEW"] = None
         self.Groups = {}
-        self.AddItems(self.M.Groups)
         self.UpdatePackageList()
+        self.AddItems(self.F.M.Groups)
 
     # --------------------------------------
     def SetActualSize(self):
@@ -87,11 +84,11 @@ class Main(UI.Scrolled):
 
     # --------------------------------------
     def UpdatePackageList(self):
-        self.Installed.SetData([(i,) for i in self.M.GetPackages()])
+        self.Installed.SetData([(i,) for i in self.F.M.GetPackages()])
         self.Installed.ReDraw()
 
     def OnRemote(self):
-        self.MainFrame.OnDialog("DOWNLOAD_PACKAGE", "MAKE_DIALOG", self.L["MANAGE_HEAD_REMOTE"], Downloader)
+        self.F.OnMakeDialog("MANAGE_HEAD_REMOTE", Downloader)
 
     def OnBrowse(self):
         fp = UI.ShowOpenFileDialog(self, self.L["MSG_PKG_INSTALL_HEAD"], "Zip files (*.zip)|*.zip")
@@ -99,26 +96,27 @@ class Main(UI.Scrolled):
             self.DoInstall(fp)
 
     def DoInstall(self, fp):
-        title, result = self.M.Install(fp)
-        self.MainFrame.OnDialog("PKG_LOAD_RESULT_%s" % fp, "SIMPLE_TEXT", title, result)
+        self.F.M.Install(fp)
         self.UpdatePackageList()
 
     def OnRemove(self):
         if self.Installed.HasSelection():
-            self.M.DelPackage(self.Installed.GetStringSelection())
+            self.F.M.DelPackage(self.Installed.GetStringSelection())
             self.UpdatePackageList()
 
     def OnReset(self):
         self.ClearItems()
-        self.AddItems(sum((self.M.Packages[pkgName].__RAW_GROUP__ for pkgName in self.M.Packages), []))
+        self.AddItems(sum((self.F.M.Packages[pkgName].__RAW_GROUP__ for pkgName in self.F.M.Packages), []))
 
     def OnReady(self):
         self.OnApply()
         self.OnClose()
 
     def OnClose(self):
-        if "DOWNLOAD_PACKAGE" in self.MainFrame.Dialogs and self.MainFrame.Dialogs["DOWNLOAD_PACKAGE"]:
-            self.MainFrame.Dialogs["DOWNLOAD_PACKAGE"].SetFocus()
+        if self.F.D.get("PACKAGE_DOWNLOAD"):
+            self.F.D["PACKAGE_DOWNLOAD"].SetFocus()
+        elif self.F.D.get("PACKAGE_INSTALL"):
+            self.F.D["PACKAGE_INSTALL"].SetFocus()
         else:
             self.GetParent().Play("FADEOUT")
 
@@ -138,9 +136,9 @@ class Main(UI.Scrolled):
                 window = sizerItem.GetWindow()
                 if isinstance(window, WidgetItem):
                     group.append(window.Item)
-        self.M.Groups = group
-        self.M.Gadget.ClearItems()
-        self.M.Gadget.AddItems(group)
+        self.F.M.Groups = group
+        self.F.Gadget.ClearItems()
+        self.F.Gadget.AddItems(group)
 
     # --------------------------------------
     def AddItems(self, args):
@@ -162,11 +160,11 @@ class Main(UI.Scrolled):
         self.Freeze()
         for arg in args:
             if not isinstance(arg, str):
-                if arg in self.M.Groups:
+                if arg in self.F.M.Groups:
                     group = self.L["GROUP_NONE"]
-                    for i in range(self.M.Groups.index(arg), -1, -1):
-                        if isinstance(self.M.Groups[i], str):
-                            group = self.M.Groups[i]
+                    for i in range(self.F.M.Groups.index(arg), -1, -1):
+                        if isinstance(self.F.M.Groups[i], str):
+                            group = self.F.M.Groups[i]
                             break
                     item = [i.GetWindow() for i in self.Groups[group]["PANEL"].GetSizer().GetChildren() if getattr(i.GetWindow(), "Item", None) is arg][0]
                     item.Destroy()
@@ -420,7 +418,7 @@ class Manage(UI.BaseDialog):
         super().__init__(parent=parent, title=parent.L["MANAGE_TITLE"], size=wx.Size(720, 480), main=Main, style=wx.FRAME_NO_TASKBAR)
         self.Head.GetSizer().Insert(0,
                                     UI.ToolNormal(self.Head, size=UI.SETTINGS["DLG_HEAD_BTN"], pics=self.R["AP_HELP"],
-                                                  func=(parent.OnDialog, "MANAGE_HELP", "SIMPLE_TEXT", self.L["MANAGE_HELP_HEAD"], self.L["MANAGE_HELP_TEXT"])),
+                                                  func=(parent.OnSimpleDialog, "MANAGE_HELP_HEAD", "MANAGE_HELP_TEXT")),
                                     0, wx.ALL, 3)
         self.Head.SetTagOffset(24, 0)
         self.Center()
@@ -437,7 +435,7 @@ class Downloader(UI.BaseMain):
     def __init__(self, parent):
         super().__init__(parent, size=wx.Size(480, -1))
         parent.OnClose = self.OnClose
-        self.MainFrame = self.GetGrandParent()
+        self.F = self.GetGrandParent()
         Sizer = wx.BoxSizer(wx.VERTICAL)
         SubSizer = wx.BoxSizer(wx.HORIZONTAL)
         self["URL"] = self.AddLineCtrl(Sizer, hint=TOY_URL, width=-1)
@@ -464,10 +462,10 @@ class Downloader(UI.BaseMain):
         try:
             with urllib.request.urlopen(url) as response:
                 filename = response.headers["Content-Disposition"].partition("filename=")[-1]
-                filepath = os.path.join(self.MainFrame.M.pathDownloaded, filename)
+                filepath = os.path.join(self.F.M.pathDownloaded, filename)
                 if os.path.exists(filepath):
                     os.remove(filepath)
-                total = int(response.headers["Content-Length"])
+                total = response.getheader("Content-Length") or "?"
                 downloaded = 0
                 with open(filepath, "wb") as fo:
                     while thread.Checkpoint("%s/%s" % (downloaded, total)):
@@ -479,14 +477,13 @@ class Downloader(UI.BaseMain):
         except Interrupted:
             if filepath and os.path.exists(filepath):
                 os.remove(filepath)
-        except Exception as e:
-            print(str(e))
+        except Exception:
             if filepath and os.path.exists(filepath):
                 os.remove(filepath)
-            wx.CallAfter(self.MainFrame.OnDialog, "DOWNLOAD_FAIL_%s" % url, "SIMPLE_TEXT", self.L["GENERAL_HEAD_FAIL"], self.L["MANAGE_REMOTE_FAIL"] % url)
+            wx.CallAfter(self.F.OnSimpleDialog, "GENERAL_HEAD_FAIL", "MANAGE_REMOTE_FAIL", textData=url)
 
     def DownLoadFinish(self, fp):
-        self.MainFrame.Dialogs["MANAGE"].Main.DoInstall(fp)
+        self.F.Manage.DoInstall(fp)
         self.OnClose()
 
     def OnUpdateStatus(self):

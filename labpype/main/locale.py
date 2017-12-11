@@ -17,6 +17,7 @@ Locale.DEFAULT = {
     "GADGET_CANCEL"       : "Clear search",
     "HIDER_GADGET"        : "Toggle Widget Panel Visibility",
     "HIDER_HARBOR"        : "Toggle Interaction Panel Visibility",
+    "HIDER_CENTER"        : "Toggle Center Panel Visibility",
 
     "TOOL_OPTION"         : "Settings",
     "TOOL_FILE_N"         : "New Project",
@@ -90,19 +91,18 @@ Locale.DEFAULT = {
 
     "MANAGE_NEW_GROUP"    : "+ Add New Group +",
     "MANAGE_HELP_HEAD"    : "How to manage widgets",
-    "MANAGE_HELP_TEXT"    : "To add widget, \n"
-                            "To remove widget, \n"
-                            "To add group, \n"
-                            "To remove group, \n"
-                            "To rearrange widget, \n"
-                            "To rearrange group, \n"
-                            "To change group name, \n",
+    "MANAGE_HELP_TEXT"    : "To remove (hide) a widget, drag the widget to \"-\".\n\n"
+                            "To add a group, click the add new group button.\n\n"
+                            "To remove a group, click the \"-\" button of that group.\n\n"
+                            "To rearrange widgets, drag and drop them.\n\n"
+                            "To rearrange groups, click the arrows on the name bar.\n\n"
+                            "To change a group's name, click it and enter a new name.",
 
-    "MSG_PKG_INIT_FAIL"   : "The following package(s) cannot be loaded:\n%s",
-    "MSG_PKG_INSTALL_HEAD": "Package install",
+    "MSG_PKG_INITIAL_FAIL": "The following package(s) cannot be loaded:\n%s",
     "MSG_PKG_EXTRACT_FAIL": "Failed to extract %s",
-    "MSG_PKG_INSTALL_DONE": "The following packages have been successfully installed:",
-    "MSG_PKG_INSTALL_FAIL": "The following packages cannot be installed:",
-    "MSG_PKG_ALREADY_HERE": "The following packages are already installed:",
+    "MSG_PKG_INSTALL_HEAD": "Package install",
+    "MSG_PKG_INSTALL_INFO": "The following packages have been successfully installed:\n%s\n\n"
+                            "The following packages are already installed:\n%s\n\n"
+                            "The following packages cannot be installed:\n%s",
 
 }

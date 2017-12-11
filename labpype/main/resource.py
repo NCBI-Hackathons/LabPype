@@ -45,9 +45,9 @@ class Resource(UI.Resource):
         self["BRUSH_ANCHOR_PASS"] = wx.Brush(self["COLOR_ANCHOR_PASS"])
         self["BRUSH_ANCHOR_FAIL"] = wx.Brush(self["COLOR_ANCHOR_FAIL"])
         # Font
-        self.SetMainFont(8, self["FONTFACE_MAIN"])
-        self["FONT_CANVAS"] = wx.Font(9, 70, 90, wx.FONTWEIGHT_BOLD, False, self["FONTFACE_CANVAS"])
-        self["FONT_FIXED"] = wx.Font(8, 70, 90, 90, False, self["FONTFACE_FIXED"])
+        self.SetMainFont(9, self["FONTFACE_MAIN"])
+        self["FONT_CANVAS"] = wx.Font(11, 70, 90, wx.FONTWEIGHT_BOLD, False, self["FONTFACE_CANVAS"])
+        self["FONT_FIXED"] = wx.Font(9, 70, 90, 90, False, self["FONTFACE_FIXED"])
         # Bitmap
         for key in ("TOOL_OPTION", "TOOL_DELETE",
                     "TOOL_FILE_N", "TOOL_FILE_O", "TOOL_FILE_S",

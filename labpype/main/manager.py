@@ -19,79 +19,65 @@ class Manager(object):
         self.pathInstalled = os.path.join(path, "installed")
         self.pathDownloaded = os.path.join(path, "downloaded")
         self.pathTemporary = os.path.join(path, "temporary")
-        try:
-            if not (UI.FindOrCreateDirectory(self.path)
-                    and UI.FindOrCreateDirectory(self.pathInstalled)
-                    and UI.FindOrCreateDirectory(self.pathDownloaded)
-                    and UI.FindOrCreateDirectory(self.pathTemporary)):
-                raise Exception
-            self.Manage = None
-            self.Gadget = None
-            self.Packages = {}  # {"pkgName": pkg, ...}
-            self.Widgets = {}  # {"pkgName/widgetClassName": pkg.widgetClass, ...}
-            self.Groups = []  # ["groupName", widget, widget, "groupName", ...]
-            self.Internal = {"Built-in": builtin}
-            self.filename = None
-            self.ok = True
-        except Exception:
-            self.ok = False
+        self.ok = all((UI.FindOrCreateDirectory(self.path),
+                       UI.FindOrCreateDirectory(self.pathInstalled),
+                       UI.FindOrCreateDirectory(self.pathDownloaded),
+                       UI.FindOrCreateDirectory(self.pathTemporary)))
 
-    def SetRSL(self, r, s, l):
-        self.R = r
-        self.S = s
-        self.L = l
-
-    def Init(self):
+    def Init(self, frame):
+        self.F = frame
+        self.R = frame.R
+        self.S = frame.S
+        self.L = frame.L
+        self.Packages = {}  # {"pkgName": pkg, ...}
+        self.Widgets = {}  # {"pkgName/widgetClassName": pkg.widgetClass, ...}
+        self.Groups = []  # ["groupName", widget, widget, "groupName", ...]
+        self.Internal = {"Built-in": builtin}
+        self.filename = os.path.join(self.path, "widgets.json")
         for name in self.Internal:
             self.AddPackage(name, self.Internal[name])
-        if self.pathInstalled not in sys.path:
-            sys.path.insert(0, self.pathInstalled)
         failed = []
+        self.AddSysPath()
         for pkgName in os.listdir(self.pathInstalled):
-            if os.path.isdir(os.path.join(self.pathInstalled, pkgName)):
+            if os.path.isdir(self.PathInInstalled(pkgName)):
                 if not self.AddPackage(pkgName):
                     failed.append(pkgName)
-        sys.path.remove(self.pathInstalled)
-        self.Load(os.path.join(self.path, "widgets.json"))
-        return failed
-
-    def GetPackages(self):
-        return sorted([i for i in self.Packages if i not in self.Internal])
+        self.DelSysPath()
+        self.Load()
+        if failed:
+            self.F.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_PKG_INITIAL_FAIL", textData=",".join(failed))
+        self.F.Gadget.AddItems(self.Groups)
 
     # -------------------------------------------------------- #
-    def Load(self, filename):
+    def Load(self):
         try:
-            if not os.path.exists(filename):
-                with open(filename, "wb") as f:
+            if not os.path.exists(self.filename):
+                with open(self.filename, "wb") as f:
                     f.write(b"[]")
-                self.Groups = sum([self.Packages[pkgName].__RAW_GROUP__ for pkgName in self.Internal], [])
+                self.Groups = sum([self.Packages[pkgName].__RAW_GROUP__ for pkgName in self.Packages], [])
             else:
                 self.Groups = []
-            with open(filename, "r", encoding="utf-8") as f:
+            with open(self.filename, "r", encoding="utf-8") as f:
                 for key, value in json.load(f):
                     if value == "W" and key in self.Widgets:
                         self.Groups.append(self.Widgets[key])
                     elif value == "G":
                         self.Groups.append(key)
-            self.filename = filename
-            return True
         except Exception:
-            return False
+            pass
 
     def Save(self):
+        out = []
+        for i in self.Groups:
+            if isinstance(i, str):
+                out.append((i, "G"))
+            else:
+                out.append((i.__ID__, "W"))
         try:
-            if self.filename is not None:
-                out = []
-                for i in self.Groups:
-                    if isinstance(i, str):
-                        out.append((i, "G"))
-                    else:
-                        out.append((i.__ID__, "W"))
-                with open(self.filename, "w", encoding="utf-8") as f:
-                    json.dump(out, f)
-            return True
+            with open(self.filename, "w", encoding="utf-8") as f:
+                json.dump(out, f)
         except Exception:
-            return False
+            pass
 
     # -------------------------------------------------------- #
     def LoadLinkage(self, pkg):
@@ -162,6 +148,8 @@ class Manager(object):
         pkg.__WIDGET__ = []  # [widget, ...]
         pkg.__GROUP__ = []  # ["pkgName/groupName", ...]
         pkg.__RAW_GROUP__ = []  # ["pkgName/groupName", widget, widget, "pkgName/groupName", ...]
+        if not hasattr(pkg, "WIDGETS"):
+            return False
         if not self.LoadLinkage(pkg):
             self.UnloadLinkage(pkg)
             return False
@@ -174,8 +162,6 @@ class Manager(object):
         if not self.LoadLocale(pkg):
             self.UnloadLocale(pkg)
             return False
-        if not hasattr(pkg, "WIDGETS"):
-            return False
         try:
             for row in pkg.WIDGETS:
                 if isinstance(row, str):
@@ -185,14 +171,14 @@ class Manager(object):
                 else:
                     if len(row) == 3:
                         color, widget, icon = row
-                        icon = os.path.join(os.path.join(self.pathInstalled, pkgName), icon)
+                        icon = os.path.join(self.PathInInstalled(pkgName), icon)
                     else:
                         color, widget = row
                         icon = None
+                    widget.NAME = self.L.Get(widget.NAME, "WIDGET_NAME_")
                     widget.__COLOR__ = color
                     widget.__ICON__ = icon
                     widget.__ID__ = "%s/%s" % (pkgName, widget.__name__)
-                    widget.NAME = self.L.Get(widget.NAME, "WIDGET_NAME_")
                     pkg.__WIDGET__.append(widget)
                     pkg.__RAW_GROUP__.append(widget)
         except Exception:
@@ -205,8 +191,9 @@ class Manager(object):
 
     def DelPackage(self, pkgName):
         pkg = self.Packages[pkgName]
-        self.Gadget.DelItems(pkg.__RAW_GROUP__)
-        self.Manage.DelItems(pkg.__RAW_GROUP__)
+        self.F.Gadget.DelItems(pkg.__RAW_GROUP__)
+        if self.F.Manage:
+            self.F.Manage.DelItems(pkg.__RAW_GROUP__)
         del self.Packages[pkgName]
         for widget in pkg.__WIDGET__:
             del self.Widgets[widget.__ID__]
@@ -219,50 +206,70 @@ class Manager(object):
         self.UnloadResource(pkg)
         self.UnloadSetting(pkg)
         self.UnloadLocale(pkg)
-        shutil.rmtree(os.path.join(self.pathInstalled, pkgName))
+        shutil.rmtree(self.PathInInstalled(pkgName))
+
+    def GetPackages(self):
+        return sorted([i for i in self.Packages if i not in self.Internal])
 
     # -------------------------------------------------------- #
     def Install(self, fp):
-        pathTmp = UI.CreateRandomDirectory(self.pathTemporary)
-        exist = []
+        pathTmp = self.Extract(fp)
+        if pathTmp is None:
+            return
         done = []
+        exist = []
         fail = []
-        try:
-            with zipfile.ZipFile(fp) as z:
-                z.extractall(pathTmp)
-        except Exception:
-            shutil.rmtree(pathTmp)
-            return self.L["GENERAL_HEAD_FAIL"], self.L["MSG_PKG_EXTRACT_FAIL"] % fp
-        if self.pathInstalled not in sys.path:
-            sys.path.insert(0, self.pathInstalled)
+        self.AddSysPath()
         self.DoInstall(pathTmp, done, exist, fail)
-        sys.path.remove(self.pathInstalled)
+        self.DelSysPath()
         shutil.rmtree(pathTmp)
-        message = ""
-        if done:
-            message += "%s\n    %s\n" % (self.L["MSG_PKG_INSTALL_DONE"], ", ".join(done))
-        if exist:
-            message += "%s\n    %s\n" % (self.L["MSG_PKG_ALREADY_HERE"], ", ".join(exist))
-        if fail:
-            message += "%s\n    %s\n" % (self.L["MSG_PKG_INSTALL_FAIL"], ", ".join(fail))
-        return self.L["MSG_PKG_INSTALL_HEAD"], message[:-1]
+        self.F.OnSimpleDialog("MSG_PKG_INSTALL_HEAD", "MSG_PKG_INSTALL_INFO", textData=(", ".join(done) or "-", ", ".join(exist) or "-", ", ".join(fail) or "-"))
 
-    def DoInstall(self, path, done, exist, fail):
+    def DoInstall(self, path, done, exist, fail, topLevel=True):
         for pkgName in os.listdir(path):
             fullPath = os.path.join(path, pkgName)
             if not os.path.isdir(fullPath):
                 continue
             if os.path.exists(os.path.join(fullPath, "__init__.py")):
-                if os.path.exists(os.path.join(self.pathInstalled, pkgName)):
+                if os.path.exists(self.PathInInstalled(pkgName)):
                     exist.append(pkgName)
                 else:
                     shutil.move(fullPath, self.pathInstalled)
                     if self.AddPackage(pkgName):
                         done.append(pkgName)
-                        self.Gadget.AddItems(self.Packages[pkgName].__RAW_GROUP__)
-                        self.Manage.AddItems(self.Packages[pkgName].__RAW_GROUP__)
+                        self.F.Gadget.AddItems(self.Packages[pkgName].__RAW_GROUP__)
+                        if self.F.Manage:
+                            self.F.Manage.AddItems(self.Packages[pkgName].__RAW_GROUP__)
                     else:
                         fail.append(pkgName)
-                        shutil.rmtree(os.path.join(self.pathInstalled, pkgName))
-            else:
-                self.DoInstall(fullPath, done, exist, fail)
+                        shutil.rmtree(self.PathInInstalled(pkgName))
+            elif topLevel:
+                self.DoInstall(fullPath, done, exist, fail, False)
+
+    def Extract(self, fp):
+        pathTmp = UI.CreateRandomDirectory(self.pathTemporary)
+        try:
+            with zipfile.ZipFile(fp) as z:
+                z.extractall(pathTmp)
+            return pathTmp
+        except Exception:
+            shutil.rmtree(pathTmp)
+            self.F.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_PKG_EXTRACT_FAIL", textData=fp)
+
+    # -------------------------------------------------------- #
+    def AddSysPath(self):
+        if self.pathInstalled not in sys.path:
+            sys.path.insert(0, self.pathInstalled)
+
+    def DelSysPath(self):
+        if self.pathInstalled in sys.path:
+            sys.path.remove(self.pathInstalled)
+
+    def PathInInstalled(self, name):
+        return os.path.join(self.pathInstalled, name)
+
+    def PathInDownloaded(self, name):
+        return os.path.join(self.pathDownloaded, name)
+
+    def PathInTemporary(self, name):
+        return os.path.join(self.pathTemporary, name)

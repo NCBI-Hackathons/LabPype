@@ -6,8 +6,8 @@ from wx import stc
 
 # ======================================================= Record =======================================================
 class Record(stc.StyledTextCtrl):
-    def __init__(self, parent, size):
-        super().__init__(parent, size=size, style=wx.BORDER_NONE)
+    def __init__(self, parent):
+        super().__init__(parent, style=wx.BORDER_NONE)
         self.R = parent.R
         self.SetUseVerticalScrollBar(False)
         self.SetUseHorizontalScrollBar(False)

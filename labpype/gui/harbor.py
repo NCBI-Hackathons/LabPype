@@ -22,8 +22,6 @@ class Harbor(UI.Scrolled):
         Sizer.Add(UI.SETTINGS["SCROLL_DIAMETER"], 4)
         self.SetSizer(Sizer)
 
-        self.showChild = True
-
     # --------------------------------------
     def SetActualSize(self):
         super().SetActualSize()
@@ -41,18 +39,10 @@ class Harbor(UI.Scrolled):
         self.SetActualSize()
 
     # --------------------------------------
-    def OnChild(self, child=None):
-        if child is None:
-            self.showChild = not self.showChild
-            for c in self.GetChildren():
-                if isinstance(child, UI.BaseMain):
-                    self.DoToggleChild(c, self.showChild)
-        else:
-            self.DoToggleChild(child, not child.IsShown())
-        self.SetActualSize()
-        self.ReDraw()
-
-    def DoToggleChild(self, child, show):
+    def OnChild(self, child):
+        show = not child.IsShown()
         child.Show(show)
         child.Sash.Show(show)
-        child.Head.SetTag((" □ ", " ■ ")[show] + child.Widget.NAME)
+        child.Head.SetPic(self.R["AP_ABORT" if show else "AP_MINI"][0])
+        self.SetActualSize()
+        self.ReDraw()
