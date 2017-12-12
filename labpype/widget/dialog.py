@@ -9,7 +9,7 @@ __all__ = ["Dialog", "DisableCanvas"]
 SIZE_BTN = wx.Size(20, 20)
 SIZE_BTN_BOLD = wx.Size(32, 20)
 SF_HEAD = wx.SizerFlags().Expand().Border(wx.TOP, 2)
-SF_MAIN = wx.SizerFlags().Expand()
+SF_MAIN = wx.SizerFlags().Expand().Border(wx.ALL, 2)
 SF_SASH = wx.SizerFlags().Expand().Border(wx.BOTTOM, 6)
 
 DisableCanvas = lambda func: lambda self: (self.DisableCanvas(), func(self), self.EnableCanvas())

@@ -219,13 +219,23 @@ class Manager(object):
         done = []
         exist = []
         fail = []
+        copy = []
+        req = []
         self.AddSysPath()
-        self.DoInstall(pathTmp, done, exist, fail)
+        self.DoInstall(pathTmp, done, exist, fail, copy, req)
         self.DelSysPath()
         shutil.rmtree(pathTmp)
-        self.F.OnSimpleDialog("MSG_PKG_INSTALL_HEAD", "MSG_PKG_INSTALL_INFO", textData=(", ".join(done) or "-", ", ".join(exist) or "-", ", ".join(fail) or "-"))
+        self.F.OnSimpleDialog("MSG_PKG_INSTALL_HEAD", "MSG_PKG_INSTALL_INFO",
+                              textData=(", ".join(done) or "-", ", ".join(exist) or "-", ", ".join(fail) or "-", ", ".join(copy) or "-", ", ".join(req) or "-"))
 
-    def DoInstall(self, path, done, exist, fail, topLevel=True):
+    def DoInstall(self, path, done, exist, fail, copy, req, topLevel=True):
+        reqFile = os.path.join(path, "requirements.txt")
+        if os.path.exists(reqFile):
+            copyOnly = True
+            with open(reqFile) as f:
+                req.extend(f.read().splitlines())
+        else:
+            copyOnly = False
         for pkgName in os.listdir(path):
             fullPath = os.path.join(path, pkgName)
             if not os.path.isdir(fullPath):
@@ -235,16 +245,19 @@ class Manager(object):
                     exist.append(pkgName)
                 else:
                     shutil.move(fullPath, self.pathInstalled)
-                    if self.AddPackage(pkgName):
-                        done.append(pkgName)
-                        self.F.Gadget.AddItems(self.Packages[pkgName].__RAW_GROUP__)
-                        if self.F.Manage:
-                            self.F.Manage.AddItems(self.Packages[pkgName].__RAW_GROUP__)
+                    if copyOnly:
+                        copy.append(pkgName)
                     else:
-                        fail.append(pkgName)
-                        shutil.rmtree(self.PathInInstalled(pkgName))
+                        if self.AddPackage(pkgName):
+                            done.append(pkgName)
+                            self.F.Gadget.AddItems(self.Packages[pkgName].__RAW_GROUP__)
+                            if self.F.Manage:
+                                self.F.Manage.AddItems(self.Packages[pkgName].__RAW_GROUP__)
+                        else:
+                            fail.append(pkgName)
+                            shutil.rmtree(self.PathInInstalled(pkgName))
             elif topLevel:
-                self.DoInstall(fullPath, done, exist, fail, False)
+                self.DoInstall(fullPath, done, exist, fail, copy, req, False)
 
     def Extract(self, fp):
         pathTmp = UI.CreateRandomDirectory(self.pathTemporary)

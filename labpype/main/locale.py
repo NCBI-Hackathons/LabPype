@@ -103,6 +103,8 @@ Locale.DEFAULT = {
     "MSG_PKG_INSTALL_HEAD": "Package install",
     "MSG_PKG_INSTALL_INFO": "The following packages have been successfully installed:\n%s\n\n"
                             "The following packages are already installed:\n%s\n\n"
-                            "The following packages cannot be installed:\n%s",
+                            "The following packages cannot be installed:\n%s\n\n"
+                            "The following packages will be installed once all the dependencies have been installed:\n%s\n\n"
+                            "Please install the following and restart LabPype to finish installing:\n%s",
 
 }
