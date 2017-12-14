@@ -17,7 +17,7 @@ WIDGETS = [
     "Flow Control",
     ("#ffffff", Passer, Find("builtin/icon", "Passer.png")),
     ("#ffffff", Condition, Find("builtin/icon", "Condition.png")),
-    ("#ffffff", Wait,),
+    ("#ffffff", Wait,Find("builtin/icon", "Wait.png")),
     # "General Operation",
     # ("#c0ffff", Merge,),
     # ("#c0ffff", Filter,),

@@ -473,13 +473,13 @@ class Widget(BaseWidget):
             self["OUT"] = self.Task()
             if self["OUT"] is None:
                 self.SetState("Fail")
-                self.Record.LogFail("%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_FAIL"]))
+                wx.CallAfter(self.Record.LogFail, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_FAIL"]))
             else:
                 self.SetState("Done")
-                self.Record.LogDone("%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_DONE"]))
+                wx.CallAfter(self.Record.LogDone, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_DONE"]))
         except Exception as e:
             self.SetState("Fail")
-            self.Record.LogFail("%s: %s" % (self.__class__.__name__, str(e)))
+            wx.CallAfter(self.Record.LogFail, "%s: %s" % (self.__class__.__name__, str(e)))
 
     # -------------------------------------------------------- #
     def OnLeaveIdle(self):
