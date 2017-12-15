@@ -9,7 +9,7 @@
     background: #606060;
 }
 body {
-    color: #dddddd;
+    color: #eeeeee;
     text-shadow: -1px -1px #404040;
 }
 img {
@@ -19,13 +19,18 @@ img {
     -moz-box-shadow: none !important;
     -o-box-shadow: none !important;
     -ms-box-shadow: none !important;
+    border: none !important;
+    padding: 0px;
+    margin: 0px;
 }
 h1, h2, h3, h4, h5, h6 {
     color: #ffffff;
 }
-h2 {
-    border-bottom: 3px solid #dddddd
+h4 {
+    border-top: 3px solid #dddddd
 }
-h2#project_tagline {
-    border-bottom: none
+td {
+    vertical-align: top;
+    padding: 0px 4px;
+    border: none;
 }
