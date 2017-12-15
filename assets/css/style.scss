@@ -15,6 +15,14 @@ body {
   text-shadow: -1px -1px #404040;
 }
 
+a {
+  color: #40ffff;
+}
+
+a:hover, a:focus {
+  font-weight: normal;
+}
+
 img {
   max-width: 960px;
   box-shadow: none !important;
