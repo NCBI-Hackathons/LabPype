@@ -40,20 +40,15 @@ MASK_GADGET = PyEmbeddedImage(
 
 # ----------------------------------------------------------------------
 WIDGET = PyEmbeddedImage(
-    b'iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAACfklEQVR42sRXTYsTQRCdr5ig'
-    b'WVxFwZOgsKIsHjx48ZTcFTz4Mz148J4f4F9YEFdxE1l1l2Q3m0km8b3wOlSazKRHAikopme6'
-    b'9r2u7qqX3nixWEShFsP4gKfwRGMCzOEFx4tAwDiUWKQkJPrMfL+NRwt+A8+5gBDyLAq32JF2'
-    b'u90VMN65plsYtuEjLWArcVKDOLWkb99/WH7kO+wCw0NlnoaA1SFexTpS95TdhTdDMZO6W037'
-    b'/Onj2lPWMAW30+Jqaruv7Rn3ej2e8XNlfAr/g5jJVkASh7gyuk/ne6fTccV7DH+nJ+cbIXh1'
-    b'trpQxba970/hA/hQ88Wuz5jpTQVu7cK00TSklVZ9HKJI5m+GHsYJ/F5dhcs8RZp6inTHZOJq'
-    b'YuyKSz1MiLlir9fLpxQvz7YoEgXhgYKHlpQ9zHYy5I/w+SH8yo/dpHDJFkVia5zCf/mkG2L7'
-    b'8K9lsb7CMdsm+44TVok8cYh81bIWEssY9fxrvP4gcQvEN/4WOnGwQH4WlrQq1sbA3mD4LZa+'
-    b'linSsfqUW3SCmLMKwJcYPoH/9WNNzJG2epkxFemApa4zcFVIGTySOIz0+TdiBhsAXyn2O/xS'
-    b'U+c8b4PH+ceKOY/VZy1V26E0t6F+GxlFitQOYxYSyU2mL5gF/ExVHQnzQLipWvLSCU6mxs5F'
-    b'MhNRomafeH08VstYewb/Ce8zE7PIhjCbG/DyTE1YGIKrEuWKNT/wiL9oMRPNu/iiCi9zEmMm'
-    b'qu5cM9sBRjxyewkIwdvV1aevs9zL1ae9r6tPuo+rz0oYQq8+de7Vy58+/sKwoEqEYVJVUP+b'
-    b'cZnQrAkD2xKY811mHCI0eejVJ97XP23/BBgAzYseM+ibA/IAAAAASUVORK5CYII=')
-
+    b'iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAABeklEQVR42uxWO3KDMBCVPJAq'
+    b'VBkX7qhyAbtyBQfwHbkJKt1wgJwgB1DpgrxlVp5lLRxgoriwd+aNLQn2aX9vsH3fm0fYxjzI'
+    b'no84W/NSXdeyMaxzLq+q6jLn3bZt10UcSOHA8lZPpCAvkqeaSFXUZLvkxBFSsrQRixQPVpYl'
+    b'1fiAvz5pc1lrc4jOkGq6BOyI7TfgK2nEINXd+wF0aDD/33N8Xko6ZG6NVieZY3IaEGo6c45z'
+    b'XRUBo88395zSWtY0QmokuSIdXY78SJHJfhMHPbPyUpEI54iMv6lxTBhkdBPCca311CWCH9ge'
+    b'fN1NqnUKw5wCJ2AbSbEUkSNwArbqEsM5bCQyWUwcxPrA4uCw76V4SKdN0wQRcTRa3OUWZ8Mz'
+    b'OCc/7yORoVRLsOZ+Anv+LdQ5kRs47nlNpBU9hz0TEPND+8FPFlEmf093J5TLaRHhtX8p1+sL'
+    b'5Hm+QBY3F4vIRYkMiUPHo5iuq0FWcE0LjvR7Celq4r+wHwEGAG6lIy9aKe5bAAAAAElFTkSu'
+    b'QmCC')
 # ----------------------------------------------------------------------
 DIALOG_ATCH = PyEmbeddedImage(
     b'iVBORw0KGgoAAAANSUhEUgAAAFAAAAAUCAYAAAAa2LrXAAABTElEQVR42uxYAQ6DIAxcl/1I'

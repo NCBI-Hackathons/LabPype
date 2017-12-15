@@ -92,7 +92,8 @@ class BaseWidget(Base):
     def __init__(self, canvas, states):
         super().__init__(w=70, h=70)
         self.Canvas = canvas
-        self.Record = canvas.GetParent().Record
+        self.LogFail = canvas.GetParent().Record.LogFail
+        self.LogDone = canvas.GetParent().Record.LogDone
         self.Bitmap = None
         self.name = None
         self.namePos = None
@@ -224,7 +225,7 @@ class BaseWidget(Base):
         a.SetPosition(self.x + ax, self.y + ay)
 
     def PositionName(self):
-        self.namePos = self.x + 28 - self.nameSize[0] // 2, self.y - self.nameSize[1] - 8 if len(self.Anchors) == 1 and self.Anchors[0].pos == "B" else self.y + 64
+        self.namePos = self.x + 28 - self.nameSize[0] // 2, self.y - self.nameSize[1] - 8 if self.Pos2Anchor["B"] and not self.Pos2Anchor["T"] else self.y + 64
 
     def Draw(self, dc):
         dc.DrawBitmap(self.Bitmap, self.x, self.y)
@@ -454,10 +455,10 @@ class Widget(BaseWidget):
                     self["OUT"] = out
                     if out is None:
                         self.SetState("Fail")
-                        wx.CallAfter(self.Record.LogFail, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_FAIL"]))
+                        wx.CallAfter(self.LogFail, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_FAIL"]))
                     else:
                         self.SetState("Done")
-                        wx.CallAfter(self.Record.LogDone, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_DONE"]))
+                        wx.CallAfter(self.LogDone, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_DONE"]))
                     self.Thread = None
         except Interrupted:
             pass
@@ -465,7 +466,7 @@ class Widget(BaseWidget):
             with self.Canvas.Lock:
                 if self.IsState("Work") and self.IsCurrentThread():
                     self.SetState("Fail")
-                    wx.CallAfter(self.Record.LogFail, "%s: %s" % (self.__class__.__name__, str(e)))
+                    wx.CallAfter(self.LogFail, "%s: %s" % (self.__class__.__name__, str(e)))
                     self.Thread = None
 
     def RunDirectly(self):
@@ -473,13 +474,13 @@ class Widget(BaseWidget):
             self["OUT"] = self.Task()
             if self["OUT"] is None:
                 self.SetState("Fail")
-                wx.CallAfter(self.Record.LogFail, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_FAIL"]))
+                wx.CallAfter(self.LogFail, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_FAIL"]))
             else:
                 self.SetState("Done")
-                wx.CallAfter(self.Record.LogDone, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_DONE"]))
+                wx.CallAfter(self.LogDone, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_DONE"]))
         except Exception as e:
             self.SetState("Fail")
-            wx.CallAfter(self.Record.LogFail, "%s: %s" % (self.__class__.__name__, str(e)))
+            wx.CallAfter(self.LogFail, "%s: %s" % (self.__class__.__name__, str(e)))
 
     # -------------------------------------------------------- #
     def OnLeaveIdle(self):

@@ -110,7 +110,7 @@ class Dialog(UI.BaseMain):
     ORIENTATION = wx.VERTICAL
     MARGIN = 2
     LABEL_WIDTH = 80
-    LINE_HEIGHT = 20
+    LINE_HEIGHT = 24
     BUTTON_WIDTH = 80
 
     def __init__(self, parent, widget):
