@@ -23,3 +23,9 @@ img {
 h1, h2, h3, h4, h5, h6 {
     color: #ffffff;
 }
+h2 {
+    border-bottom: 3px solid #dddddd
+}
+h2#project_tagline {
+    border-bottom: none
+}

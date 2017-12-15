@@ -1,3 +1,4 @@
 theme: jekyll-theme-slate
 title: LabPype
-description: Framework for Creating Interactive Lab Protocols
+description: A framework for rapid development of pipeline and workflow management software
+
