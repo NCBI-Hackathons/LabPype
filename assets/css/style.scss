@@ -3,39 +3,57 @@
 
 @import "{{ site.theme }}";
 #main_content {
-    max-width: 960px;
+  max-width: 960px;
 }
+
 #main_content_wrap {
-    background: #606060;
+  background: #606060;
 }
+
 body {
-    color: #eeeeee;
-    text-shadow: -1px -1px #404040;
+  color: #eeeeee;
+  text-shadow: -1px -1px #404040;
 }
+
 img {
-    max-width: 960px;
-    box-shadow: none !important;
-    -webkit-box-shadow: none !important;
-    -moz-box-shadow: none !important;
-    -o-box-shadow: none !important;
-    -ms-box-shadow: none !important;
-    border: none !important;
-    padding: 0px;
-    margin: 0px;
+  max-width: 960px;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+  -o-box-shadow: none !important;
+  -ms-box-shadow: none !important;
+  border: none !important;
+  padding: 0px;
+  margin: 0px;
 }
+
 h1, h2, h3, h4, h5, h6 {
-    color: #ffffff;
+  color: #ffffff;
 }
-h4 {
-    border-top: 3px solid #eeeeee;
+
+h3 {
+  border-top: 3px solid #eeeeee;
 }
+
 table {
-    border: none;
+  box-shadow: 4px 4px #404040;
+  -webkit-box-shadow: 4px 4px #404040;
+  -moz-box-shadow: 4px 4px #404040;
+  -o-box-shadow: 4px 4px #404040;
+  -ms-box-shadow: 4px 4px #404040;
+  padding: 4px;
+  border-collapse: separate;
+  border-spacing: 4px;
+  border: 2px solid #404040;
 }
+
 td {
-    vertical-align: top;
-    border: none;
+  vertical-align: top;
+  border: none;
+  padding: 0px;
 }
+
 th {
-    padding: 4px 10px;
+  padding: 4px 10px;
+  text-align: center;
 }
