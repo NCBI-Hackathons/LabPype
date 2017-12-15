@@ -27,10 +27,15 @@ h1, h2, h3, h4, h5, h6 {
     color: #ffffff;
 }
 h4 {
-    border-top: 3px solid #dddddd
+    border-top: 3px solid #eeeeee;
+}
+table {
+    border: none;
 }
 td {
     vertical-align: top;
-    padding: 0px 4px;
     border: none;
+}
+th {
+    padding: 4px 10px;
 }

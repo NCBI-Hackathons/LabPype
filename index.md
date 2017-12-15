@@ -7,6 +7,7 @@ As a framework, LabPype tries to minimize the efforts needed to make new widgets
 
 We are going to see four examples here. The first example demonstrates the basic idea of LabPype and how to develop widgets using LabPype. The second example shows how it assists the design of a specific wet lab experiment. The third example demonstrates its flexibility by combining widgets. The last example shows three main ways to implement tasks in LabPype.
 
+<br>
 
 #### Example 1: Toy widget set
 
@@ -20,6 +21,7 @@ We are going to see four examples here. The first example demonstrates the basic
 | ![toy5](assets/img/toy/5.png) | ![toy6](assets/img/toy/6.png) | TODO |
 | ![toy7](assets/img/toy/7.png) | ![toy8](assets/img/toy/8.png) | TODO |
 
+<br>
 
 #### Example 2: Cloning widget set
 The following workflow demonstrate the steps of how to use bimolecular fluorescence complementation to test the interaction between two proteins. This workflow makes the experiment very intuitive. User can modify the input (e.g., primers, DNA sequences, enzymes, etc.) and simulate the experiment to get the hypothetical result in real time.
@@ -46,15 +48,14 @@ The following workflow represents two PCR reactions that use the same set of pri
 ![cloning7](assets/img/cloning/7.png) This "Restriction Enzyme" widget lets you select a restriction enzyme from an internal RE database.  
 ![cloning8](assets/img/cloning/8.png)
 
+<br>
 
 #### Example 3: Biopython widget set
-This example shows what users can do with just four widgets:  
+This example shows what users can do with just four widgets. These four widgets are simply wappers for functions from Biopython package.
 
 | Widget set | Function |
 | --- | --- |
 | ![biopython0](assets/img/biopython/0.png) | **LoadFile** - loads a FASTA or GenBank file, and sends sequence records to downstream widgets<br>**SaveFile** - saves the records received from upstream widgets to either FASTA or GenBank file<br>**NewRecord** - lets user input sequence directly<br>**ViewSequence** - shows the sequences sent to it |
-
-These four widgets are simply wappers for functions from Biopython package.
 
 | Task | Scheme |
 | --- | --- |
@@ -64,6 +65,7 @@ These four widgets are simply wappers for functions from Biopython package.
 | Merge files | ![biopython4](assets/img/biopython/4.png) |
 | Append a record to a file | ![biopython5](assets/img/biopython/5.png) |
 
+<br>
 
 #### Example 4: Machine learning widget set
 
