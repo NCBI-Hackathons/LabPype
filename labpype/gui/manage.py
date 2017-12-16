@@ -6,7 +6,7 @@ import threading
 import urllib.request
 import urllib.parse
 import DynaUI as UI
-from ..widget import Thread, Interrupted
+from ..utility import Thread, Interrupted
 
 SIZE_S = wx.Size(80, 24)
 SIZE_B = wx.Size(200, 24)

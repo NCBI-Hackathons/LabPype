@@ -91,13 +91,14 @@ class AttachedHead(UI.Button):
 
 # ==================================================== DialogMaker =====================================================
 def MakeWidgetDialog(widget):
-    Frame = UI.BaseDialog(parent=widget.Canvas.GetParent(),
+    Frame = UI.BaseDialog(parent=widget.Canvas.F,
                           title=widget.NAME,
                           style=wx.FRAME_FLOAT_ON_PARENT,
                           main=(widget.DIALOG, {"widget": widget}),
                           head=DetachedHead)
-    Frame.SetSize(widget.DialogSize or Frame.GetEffectiveMinSize())
-    Frame.SetPosition(widget.DialogPos or UI.EnsureWindowInScreen(widget.Canvas.ClientToScreen(widget.GetPosition() + wx.Point(64, 0)), Frame.GetSize()))
+    x, y = widget.DialogSize or Frame.GetEffectiveMinSize()
+    Frame.SetSize((max(x, 120), max(y, UI.SETTINGS["DLG_HEAD"] + 10)))
+    Frame.SetPosition(widget.DialogPos or UI.EnsureWindowInScreen(widget.Canvas.ClientToScreen(widget.GetPosition() + wx.Point(64, 0)), (x, y)))
     Frame.Main.GetData()
     Frame.Play("FADEIN")
     return Frame.Main

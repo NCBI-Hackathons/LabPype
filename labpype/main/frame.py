@@ -298,6 +298,9 @@ class MainFrame(wx.Frame):
 
     # --------------------------------------
     def OnClose(self, evt):
+        app = wx.GetApp()
+        if hasattr(app, "_CallAfterId"):
+            app.Disconnect(-1, -1, app._CallAfterId)
         for w in self.Canvas.Widget:
             w.StopThread()
         for dialog in wx.GetTopLevelWindows():

@@ -29,11 +29,17 @@ IdPool = _IdPool()
 # ======================================================== Base ========================================================
 class Base(object):
     def __init__(self, w, h):
-        self.Id = IdPool.Acquire()
+        self.AcquireID()
         self.x = self.lastX = 0
         self.y = self.lastY = 0
         self.rect = wx.Rect(0, 0, w, h)
         self.Contains = self.rect.Contains
+
+    def AcquireID(self):
+        self.Id = IdPool.Acquire()
+
+    def ReleaseID(self):
+        IdPool.Release(self.Id)
 
     def GetPosition(self):
         return self.x, self.y

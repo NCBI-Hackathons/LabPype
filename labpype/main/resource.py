@@ -71,6 +71,7 @@ class Resource(UI.Resource):
                     ):
             self[key] = self.GetBitmap(key)
         # Resources for widget drawing
+        self["INDICATOR"] = UI.GetBitmaps(self.GetBitmap("INDICATOR"), 10, 10)
         self.DefaultIcon = Img.WIDGET.GetBitmap()
         self.MaskCanvas = Img.MASK_CANVAS.GetBitmap()
         self.MaskGadget = Img.MASK_GADGET.GetBitmap()
@@ -79,7 +80,6 @@ class Resource(UI.Resource):
         self.RectGadget = wx.Rect(0, 0, 32, 32)
         self.RectCursor = wx.Rect(0, 0, 30, 30)
         self.WidgetPen = wx.Pen("#000000", 1)
-        self.WidgetBrush = wx.Brush("#00000060")
 
     def GetBitmap(self, key):
         return getattr(Img, key).GetBitmap()
@@ -121,16 +121,19 @@ class Resource(UI.Resource):
         mgc.SetPen(self.WidgetPen)
         mgc.SetBrush(brush)
         mgc.DrawRectangle(4, 4, 48, 48)
-        mgc.SetBrush(self.WidgetBrush)
-        mgc.DrawRectangle(5, 5, 8, 8)
         mdc.DrawBitmap(bitmap, 28 - w2, 28 - h2)
+        mdc.DrawBitmap(self["INDICATOR"][3], 5, 5)
+        if cls.SINGLETON:
+            mdc.DrawBitmap(self["INDICATOR"][0], 42, 42)
+        if cls.PROVIDER:
+            mdc.DrawBitmap(self["INDICATOR"][0], 5, 42)
         mdc.SelectObject(wx.NullBitmap)
         for state in ("DONE", "FAIL", "WAIT", "WORK"):
             cls.__RES__["CANVAS"][state] = cls.__RES__["CANVAS"]["IDLE"].GetSubBitmap(self.RectCanvas)
             mdc.SelectObject(cls.__RES__["CANVAS"][state])
             mgc = wx.GraphicsContext.Create(mdc)
             mgc.SetBrush(self["BRUSH_WIDGET_" + state])
-            mgc.DrawRectangle(7, 7, 6, 6)
+            mgc.DrawRectangle(8, 8, 6, 6)
         # For Gadget
         mdc.SelectObject(cls.__RES__["BUTTON"])
         mgc = wx.GraphicsContext.Create(mdc)

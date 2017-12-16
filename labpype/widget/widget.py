@@ -6,25 +6,20 @@ import math
 import json
 import threading
 from DynaUI import GetMultiLineTextExtent, DoNothing
+from ..utility import Thread, Interrupted
 from .dialog import MakeWidgetDialog, Dialog
-from .base import Base, IdPool
+from .base import Base
 from .field import BaseField
 from .anchor import Anchor
 
 __all__ = [
     "BaseWidget",
     "Widget",
-    "Thread",
-    "Interrupted",
     "Synced",
 ]
 
 
 # ======================================================== Misc ========================================================
-class Interrupted(Exception):
-    """Raise to interrupt running thread"""
-
-
 def Synced(func):
     def SyncedFunc(self, *args, **kwargs):
         if self.THREAD:
@@ -36,23 +31,6 @@ def Synced(func):
     return SyncedFunc
 
 
-class Thread(threading.Thread):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.setDaemon(True)
-        self.stop = False
-        self.status = ""
-
-    def Stop(self):
-        self.stop = True
-
-    def Checkpoint(self, status=""):
-        if self.stop:
-            raise Interrupted
-        self.status = status
-        return True
-
-
 # ===================================================== BaseWidget =====================================================
 class BaseWidget(Base):
     NAME = ""
@@ -60,13 +38,15 @@ class BaseWidget(Base):
     THREAD = False
     INTERNAL = None
     INCOMING = None
+    PROVIDER = None
     OUTGOING = None
     SINGLETON = False
 
-    __COLOR__ = None
-    __ICON__ = None
-    __RES__ = None
     __ID__ = None
+    __RES__ = None
+    __ICON__ = None
+    __COLOR__ = None
+    __RECEIVER__ = None
 
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, "__INITIALIZED__"):
@@ -83,10 +63,19 @@ class BaseWidget(Base):
                 cls.INCOMING = ()
             elif not isinstance(cls.INCOMING[0], (tuple, list)):
                 cls.INCOMING = (cls.INCOMING,)
+            if cls.PROVIDER is None:
+                cls.PROVIDER = ()
+            elif not isinstance(cls.PROVIDER[0], (tuple, list)):
+                cls.PROVIDER = (cls.PROVIDER,)
             if cls.OUTGOING is None:
                 pass
             elif not isinstance(cls.OUTGOING, (tuple, list)):
                 cls.OUTGOING = (cls.OUTGOING, "Output", None)
+            if cls.SINGLETON and cls.__RECEIVER__ is None:
+                cls.__RECEIVER__ = []
+            for kls, key in cls.PROVIDER:
+                if kls.__RECEIVER__ is None:
+                    kls.__RECEIVER__ = []
         return super().__new__(cls)
 
     def __init__(self, canvas, states):
@@ -102,42 +91,47 @@ class BaseWidget(Base):
         self.DialogPos = None
         self.DialogSize = None
         self.Thread = None
-        self.Data = {}
+        self.Data = {"OUT": None}
         self.Incoming = []
         self.Outgoing = []
         self.Key2Anchor = {}
         self.Pos2Anchor = {"L": [], "T": [], "R": [], "B": []}
-        if self.INTERNAL:
-            for field in self.INTERNAL:
-                self.Data[field.key if isinstance(field, BaseField) else field] = None
-        if self.INCOMING:
-            for args in self.INCOMING:
-                self.AddAnchor(False, *args)
+        for field in self.INTERNAL:
+            self.Data[field.key if isinstance(field, BaseField) else field] = None
+        for args in self.INCOMING:
+            self.AddAnchor(False, *args)
+        for cls, key in self.PROVIDER:
+            self.Data[key] = None
+            cls.__RECEIVER__.append(self)
         if self.OUTGOING:
             self.AddAnchor(True, self.OUTGOING[0], "OUT", True, "RBT", self.Canvas.L.Get(self.OUTGOING[1], "ANCHOR_NAME_"), self.OUTGOING[2] if len(self.OUTGOING) > 2 else Anchor)
         self.Anchors = self.Incoming + self.Outgoing
         if self.__class__.SINGLETON:
             self.__class__.SINGLETON = self
-        self.state = None
+        self.state = states[0]
+        getattr(self, "OnEnter%s" % self.state, DoNothing)()
         self.SetName()
-        self.SetState(states[0])
         self.Init()
 
     # -------------------------------------------------------- #
     @Synced
     def Destroy(self):
         self.Exit()
-        getattr(self, "OnLeave%s" % self.state, DoNothing)()
         self.SetState = DoNothing
+        getattr(self, "OnLeave%s" % self.state, DoNothing)()
         if self.Dialog:
             self.Dialog.OnClose()
         self.StopThread()
-        for a in reversed(self.Anchors):
-            a.EmptyTarget(a.send)
-            IdPool.Release(a.Id)
-        IdPool.Release(self.Id)
+        for cls, key in self.PROVIDER:
+            cls.__RECEIVER__.remove(self)
         if isinstance(self.__class__.SINGLETON, self.__class__):
             self.__class__.SINGLETON = True
+            for w in self.__RECEIVER__:
+                w.OnAlter()
+        for a in reversed(self.Anchors):
+            a.EmptyTarget(a.send)
+            a.ReleaseID()
+        self.ReleaseID()
         self.Data = None
 
     @Synced
@@ -194,14 +188,14 @@ class BaseWidget(Base):
                 self.Pos2Anchor[a.pos].remove(a)
                 x = sum(i.x for i in a.connected) / len(a.connected) - self.x - 26
                 y = sum(i.y for i in a.connected) / len(a.connected) - self.y - 26
-                theta = math.atan2(y, x) * 4
-                if "T" in a.posAllowed and -3.0 * math.pi <= theta < -math.pi:
+                index = math.atan2(y, x) * 4 / math.pi
+                if "T" in a.posAllowed and -3.0 <= index < -1:
                     a.pos = "T"
-                elif "R" in a.posAllowed and -math.pi <= theta < math.pi:
+                elif "R" in a.posAllowed and -1 <= index < 1:
                     a.pos = "R"
-                elif "B" in a.posAllowed and math.pi <= theta < 3 * math.pi:
+                elif "B" in a.posAllowed and 1 <= index < 3:
                     a.pos = "B"
-                elif "L" in a.posAllowed and (3 * math.pi <= theta or theta < -3.0 * math.pi):
+                elif "L" in a.posAllowed and (3 <= index or index < -3.0):
                     a.pos = "L"
                 self.Pos2Anchor[a.pos].append(a)
         for p in "LRTB":
@@ -230,7 +224,7 @@ class BaseWidget(Base):
     def Draw(self, dc):
         dc.DrawBitmap(self.Bitmap, self.x, self.y)
         if self.Dialog:
-            dc.DrawBitmap(self.Canvas.R["DIALOG_DTCH" if self.Dialog.detached else "DIALOG_ATCH"][3], self.x + 36, self.y)
+            dc.DrawBitmap(self.Canvas.R["INDICATOR"][2 if self.Dialog.detached else 1], self.x + 42, self.y + 5)
         if self.Canvas.S["TOGGLE_NAME"]:
             if self.Thread and self.Thread.status:
                 dc.nameTexts.append("%s %s" % (self.name, self.Thread.status))
@@ -255,11 +249,16 @@ class BaseWidget(Base):
         for a in self.Outgoing:
             for dest in a.connected:
                 yield dest.Widget
+        if self.SINGLETON:
+            for w in self.__RECEIVER__:
+                yield w
 
     def GetIncomingWidget(self):
         for a in self.Incoming:
             for dest in a.connected:
                 yield dest.Widget
+        for cls, key in self.PROVIDER:
+            yield cls.SINGLETON
 
     def IsOutgoingAvailable(self):
         for a in self.Outgoing:
@@ -270,6 +269,9 @@ class BaseWidget(Base):
     def IsIncomingAvailable(self):
         for a in self.Incoming:
             if not a.connected:
+                return False
+        for cls, key in self.PROVIDER:
+            if not isinstance(cls.SINGLETON, cls):
                 return False
         return True
 
@@ -287,6 +289,9 @@ class BaseWidget(Base):
     def UpdateIncoming(self):
         for a in self.Incoming:
             self[a.key] = a.Retrieve()
+        for cls, key in self.PROVIDER:
+            if isinstance(cls.SINGLETON, cls):
+                self[key] = cls.SINGLETON["OUT"]
 
     def UpdateOutgoing(self):
         for a in self.Outgoing:
@@ -395,7 +400,8 @@ class Widget(BaseWidget):
         self.StopThread()
         self.UpdateData()
         for w in self.GetOutgoingWidget():
-            w.OnAlter()
+            if not w.IsState("Idle"):
+                w.OnAlter()
 
     def OnShowDialog(self):
         if self.THREAD and self.Dialog:

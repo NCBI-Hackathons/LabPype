@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import threading
 
 PACKAGE_PATH = os.path.dirname(os.path.realpath(__file__))
 Find = lambda path="", f="": os.path.join(os.path.join(PACKAGE_PATH, path), f)
@@ -51,3 +52,26 @@ def DistributeV(posList):
     y.sort()
     interval = (y[-1] - y[0]) / (len(posList) - 1)
     return [(posList[i][0], y[0] + interval * i) for i in range(len(posList))]
+
+
+class Interrupted(Exception):
+    """Raise to interrupt running thread"""
+
+
+class Thread(threading.Thread):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setDaemon(True)
+        self.stop = False
+        self.status = ""
+        self.progress = 0
+
+    def Stop(self):
+        self.stop = True
+
+    def Checkpoint(self, status="", progress=0):
+        if self.stop:
+            raise Interrupted
+        self.status = status
+        self.progress = progress
+        return True

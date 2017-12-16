@@ -49,6 +49,15 @@ WIDGET = PyEmbeddedImage(
     b'OCc/7yORoVRLsOZ+Anv+LdQ5kRs47nlNpBU9hz0TEPND+8FPFlEmf093J5TLaRHhtX8p1+sL'
     b'5Hm+QBY3F4vIRYkMiUPHo5iuq0FWcE0LjvR7Celq4r+wHwEGAG6lIy9aKe5bAAAAAElFTkSu'
     b'QmCC')
+
+# ----------------------------------------------------------------------
+INDICATOR = PyEmbeddedImage(
+    b'iVBORw0KGgoAAAANSUhEUgAAACgAAAAKCAYAAADGmhxQAAAAyklEQVR42qRUgQ0DIQjUxsE6'
+    b'DRN0jE7AslYMfix/CrYk5P8U5TzQlO5GKWY9rta6dY3r7sUiL5vk7JDjQJy379NbUA42m41P'
+    b'SKqS0HLO7826V3FKapN/4bZBxy2JlI9BctJvQvPmwNAe0V4DX0sCjq9w1FyC2qyXchMe8zyV'
+    b'kYKHPSLI5tbdeqedno0a7JVKiIMb/ZuCknC4Q05iLiXkf9d/GstjneL/S7xSDjX0VFqeiNFQ'
+    b'EOETgnkhfeR9o80tJDOOMEfewY8AAwByzL/rmjaN8wAAAABJRU5ErkJggg==')
+
 # ----------------------------------------------------------------------
 DIALOG_ATCH = PyEmbeddedImage(
     b'iVBORw0KGgoAAAANSUhEUgAAAFAAAAAUCAYAAAAa2LrXAAABTElEQVR42uxYAQ6DIAxcl/1I'
