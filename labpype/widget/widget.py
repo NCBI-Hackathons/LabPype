@@ -95,7 +95,7 @@ class BaseWidget(Base):
         self.Incoming = []
         self.Outgoing = []
         self.Key2Anchor = {}
-        self.Pos2Anchor = {"L": [], "T": [], "R": [], "B": []}
+        self.Pos2Anchor = {"L": {}, "T": {}, "R": {}, "B": {}}
         for field in self.INTERNAL:
             self.Data[field.key if isinstance(field, BaseField) else field] = None
         for args in self.INCOMING:
@@ -161,7 +161,7 @@ class BaseWidget(Base):
         (self.Outgoing if send else self.Incoming).append(a)
         self.Data[key] = None
         self.Key2Anchor[key] = a
-        self.Pos2Anchor[a.pos].append(a)
+        self.Pos2Anchor[a.pos][a] = 0
 
     def SetName(self):
         try:
@@ -184,24 +184,21 @@ class BaseWidget(Base):
 
     def PositionAnchor(self):
         for a in self.Anchors:
-            if a.posAuto and a.connected:
-                self.Pos2Anchor[a.pos].remove(a)
+            del self.Pos2Anchor[a.pos][a]
+            if a.connected:
                 x = sum(i.x for i in a.connected) / len(a.connected) - self.x - 26
                 y = sum(i.y for i in a.connected) / len(a.connected) - self.y - 26
-                index = math.atan2(y, x) * 4 / math.pi
-                if "T" in a.posAllowed and -3.0 <= index < -1:
-                    a.pos = "T"
-                elif "R" in a.posAllowed and -1 <= index < 1:
-                    a.pos = "R"
-                elif "B" in a.posAllowed and 1 <= index < 3:
-                    a.pos = "B"
-                elif "L" in a.posAllowed and (3 <= index or index < -3.0):
-                    a.pos = "L"
-                self.Pos2Anchor[a.pos].append(a)
-        for p in "LRTB":
-            n = len(self.Pos2Anchor[p])
-            for index, a in enumerate(self.Pos2Anchor[p]):
-                self._PositionAnchor(a, index * 18 + (1 - n) * 9)
+                theta = math.atan2(y, x)
+                index = math.ceil(theta * 4 / math.pi)
+                a.pos = a.posTable[index]
+            else:
+                theta = 0
+                a.pos = a.posAllowed[0]
+            self.Pos2Anchor[a.pos][a] = theta if a.pos != "B" else -theta
+        for p in "LTRB":
+            n = 1 - len(self.Pos2Anchor[p])
+            for index, a in enumerate(sorted(self.Pos2Anchor[p].items(), key=lambda x: x[1])):
+                self._PositionAnchor(a[0], index * 18 + n * 9)
 
     def _PositionAnchor(self, a, offset=0):
         if a.pos == "L":

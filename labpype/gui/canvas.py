@@ -457,6 +457,8 @@ def DrawCurve(path, x1, y1, x2, y2, c1, c2):
 
 def DrawStraight(path, x1, y1, x2, y2, c1, c2):
     path.MoveToPoint(x1, y1)
+    path.AddLineToPoint(x1 + 8, y1)
+    path.AddLineToPoint(x2 - 8, y2)
     path.AddLineToPoint(x2, y2)
 
 

@@ -32,6 +32,34 @@ def DetectCircularReference(Incoming, Outgoing, visited=None):
                     return True
 
 
+NEAREST_POS = {
+    -3: (-3, -2, +3, +0),
+    -2: (-2, -3, +0, +3),
+    -1: (-1, +0, -3, +2),
+    +0: (+0, -1, +2, -3),
+    +1: (+1, +2, -1, +4),
+    +2: (+2, +1, +4, -1),
+    +3: (+3, +4, +1, -2),
+    +4: (+4, +3, -2, +1), }
+POS_MAP = {
+    -3: "L", -2: "T", -1: "T", +0: "R",
+    +1: "R", +2: "B", +3: "B", +4: "L", }
+POS_TABLE = {}
+for binPos in range(1, 16):
+    POS_TABLE[binPos] = {}
+    allowed = set()
+    if 0b1000 & binPos:  # L
+        allowed.update((-3, +4))
+    if 0b0100 & binPos:  # T
+        allowed.update((-2, -1))
+    if 0b0010 & binPos:  # R
+        allowed.update((+0, +1))
+    if 0b0001 & binPos:  # B
+        allowed.update((+2, +3))
+    for index in NEAREST_POS:
+        POS_TABLE[binPos][index] = POS_MAP[[i for i in NEAREST_POS[index] if i in allowed][0]]
+
+
 class Anchor(Base):
     def __init__(self, widget, aType, key, multiple, send, pos, name):
         super().__init__(w=6, h=6)
@@ -41,11 +69,12 @@ class Anchor(Base):
         self.key = key
         self.multiple = multiple
         self.send = send
-        self.posAllowed = pos
         self.name = name
 
-        self.posAuto = len(self.posAllowed) > 1
-        self.pos = self.posAllowed[0]
+        self.posAllowed = pos
+        self.posTable = POS_TABLE[(0b1000 if "L" in pos else 0) | (0b0100 if "T" in pos else 0) | (0b0010 if "R" in pos else 0) | (0b0001 if "B" in pos else 0)]
+        self.pos = pos[0]
+
         self.single = not multiple
         self.recv = not send
         self.rect.SetSize((18, 18))
@@ -149,7 +178,7 @@ class Anchor(Base):
 
     def SetTarget(self, dest, onAlter=True):  # self always send, dest always recv
         if DetectCircularReference(dest.Widget, self.Widget):  # Check the opposite send
-            return self.Canvas.SetStatus(self.Canvas.L["MSG_CIRCULAR_LINKAGE"], 1, 5)
+            return self.Canvas.F.SetStatus(self.Canvas.L["MSG_CIRCULAR_LINKAGE"], 1, 5)
         if dest in self.connected:
             return self.RemoveTarget(dest, True)
         if dest.single and dest.connected:
@@ -164,7 +193,7 @@ class Anchor(Base):
 
     def Retrieve(self):
         if self.connected:
-            data = [LegitLink.Transfer(dest.GetType(),self.GetType())(dest.Widget[dest.key]) for dest in self.connected]
+            data = [LegitLink.Transfer(dest.GetType(), self.GetType())(dest.Widget[dest.key]) for dest in self.connected]
             return data[0] if self.single else data
         return None
 
