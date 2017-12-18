@@ -193,7 +193,18 @@ class Anchor(Base):
 
     def Retrieve(self):
         if self.connected:
-            data = [LegitLink.Transfer(dest.GetType(), self.GetType())(dest.Widget[dest.key]) for dest in self.connected]
+            data = []
+            for dest in self.connected:
+                if dest.Widget[dest.key] is None:
+                    data.append(None)
+                else:
+                    f = LegitLink.Transfer(dest.GetType(), self.GetType())
+                    if f is None:
+                        data.append(dest.Widget[dest.key])
+                    elif callable(f):
+                        data.append(f(dest.Widget[dest.key]))
+                    else:
+                        data.append(dest.Widget[dest.key][f])
             return data[0] if self.single else data
         return None
 

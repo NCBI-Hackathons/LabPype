@@ -320,9 +320,7 @@ class BaseWidget(Base):
             self.Thread = None
 
     def SaveData(self):
-        data = {}
-        if self.OUTGOING:
-            data["OUT"] = self.Data["OUT"]
+        data = {"OUT": self.Data["OUT"]}
         for key in self.INTERNAL:
             if isinstance(key, BaseField):
                 key = key.key
@@ -330,8 +328,7 @@ class BaseWidget(Base):
         return self.Save(data)
 
     def LoadData(self, f):
-        self.Data = self.Load(f)
-        self.SetName()
+        self.Data.update(self.Load(f))
 
     # -------------------------------------------------------- #
     def OnBegin(self):

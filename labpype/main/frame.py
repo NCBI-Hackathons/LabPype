@@ -276,6 +276,8 @@ class MainFrame(wx.Frame):
                                 widget[wId].LoadData(f)  # b -> widget.LoadData
                 for wId in widget:
                     widget[wId].UpdateIncoming()
+                    widget[wId].PositionAnchor()
+                    widget[wId].SetName()
             self.NewHistory(fp)
             return True
         except Exception:

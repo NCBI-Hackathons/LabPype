@@ -39,8 +39,8 @@ Here are some other widgets in this package:
 | Widget | Dialog | Note |
 | --- | --- | --- |
 | ![toy3](assets/img/toy/3.png) | ![toy4](assets/img/toy/4.png) | "Clicker" is used for testing the stability of LabPype.<br>Add this widget to the canvas and run it. It will constantly start/stop other widgets on the canvas in a fast and random fashion. |
-| ![toy5](assets/img/toy/5.png) | ![toy6](assets/img/toy/6.png) | This example shows how to use DataField as internal input type for automatic generation of dialogs.<br>[See source code](https://github.com/yadizhou/LabPype-ToyWidget/blob/b43b289f98da8f9df607ca8fbf8a0666df1309d0/toy/widget.py#L122) |
-| ![toy7](assets/img/toy/7.png) | ![toy8](assets/img/toy/8.png) | This example shows how to define your own dialog and link the UI elements with data in the widget.<br>[See source code](https://github.com/yadizhou/LabPype-ToyWidget/blob/b43b289f98da8f9df607ca8fbf8a0666df1309d0/toy/dialog.py#L17) |
+| ![toy5](assets/img/toy/5.png) | ![toy6](assets/img/toy/6.png) | This example shows how to use DataField as internal input type for automatic generation of dialogs.<br>[See source code](https://github.com/yadizhou/LabPype-ToyWidget/blob/533273079a1811769e1e51de4a8420f15b77c21e/toy/widget.py#L122) |
+| ![toy7](assets/img/toy/7.png) | ![toy8](assets/img/toy/8.png) | This example shows how to define your own dialog and link the UI elements with data in the widget.<br>[See source code](https://github.com/yadizhou/LabPype-ToyWidget/blob/533273079a1811769e1e51de4a8420f15b77c21e/toy/dialog.py#L17) |
 
 <br>
 

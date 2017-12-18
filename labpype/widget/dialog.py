@@ -107,6 +107,7 @@ def MakeWidgetDialog(widget):
 # ======================================================= Dialog =======================================================
 class Dialog(UI.BaseMain):
     AUTO = True
+    TASK = False
     SIZE = None
     ORIENTATION = wx.VERTICAL
     MARGIN = 2
@@ -124,8 +125,8 @@ class Dialog(UI.BaseMain):
         self.Sash = None
         self.detached = True
         self.Auto = {}
-        Sizer = wx.BoxSizer({"H": wx.HORIZONTAL, "V": wx.VERTICAL}[self.ORIENTATION] if self.ORIENTATION in ("V", "H") else self.ORIENTATION)
-        self.Initialize(Sizer)
+        MainSizer = wx.BoxSizer({"H": wx.HORIZONTAL, "V": wx.VERTICAL}[self.ORIENTATION] if self.ORIENTATION in ("V", "H") else self.ORIENTATION)
+        Sizer = self.Initialize(MainSizer) or MainSizer
         if self.AUTO and self.Widget.INTERNAL:
             for f in self.Widget.INTERNAL:
                 if isinstance(f, str):
@@ -157,8 +158,8 @@ class Dialog(UI.BaseMain):
                         self.Auto[key] = self.AddPickerValue(Sizer, label=label, choices=choices, selected=selected, **f.kwargs).GetSelection
                 elif issubclass(cls, FileField):
                     self.Auto[key] = self.AddPickerFile(Sizer, label=label, value=self.GetDefaultData(key, ""), **f.kwargs).GetValue
-        self.Finalize(Sizer)
-        self.SetSizer(Sizer)
+        self.Finalize(MainSizer)
+        self.SetSizer(MainSizer)
 
     # --------------------------------------
     def AutoSetData(self):
@@ -288,6 +289,8 @@ class Dialog(UI.BaseMain):
         if self.Widget.THREAD:
             self[3] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_BEGIN"], edge="D", func=self.OnBegin)
             self[4] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_ABORT"], edge="D", func=self.OnAbort)
+        elif self.TASK:
+            self[3] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_BEGIN"], edge="D", func=self.OnBegin)
         else:
             self[1] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_CHECK"], edge="D", func=self.OnReady)
         if self.Widget.INTERNAL or self.Widget.INCOMING:
