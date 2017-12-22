@@ -176,6 +176,7 @@ class Manager(object):
                         color, widget = row
                         icon = None
                     widget.NAME = self.L.Get(widget.NAME, "WIDGET_NAME_")
+                    widget.DESC = self.L.Get(widget.DESC, "WIDGET_DESC_")
                     widget.__COLOR__ = color
                     widget.__ICON__ = icon
                     widget.__ID__ = "%s/%s" % (pkgName, widget.__name__)

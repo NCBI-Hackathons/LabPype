@@ -123,7 +123,7 @@ class Resource(UI.Resource):
         mgc.DrawRectangle(4, 4, 48, 48)
         mdc.DrawBitmap(bitmap, 28 - w2, 28 - h2)
         mdc.DrawBitmap(self["INDICATOR"][3], 5, 5)
-        if cls.SINGLETON:
+        if cls.UNIQUE:
             mdc.DrawBitmap(self["INDICATOR"][0], 42, 42)
         if cls.PROVIDER:
             mdc.DrawBitmap(self["INDICATOR"][0], 5, 42)

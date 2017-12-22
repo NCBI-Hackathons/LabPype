@@ -46,7 +46,7 @@ class MainFrame(wx.Frame):
         self.Record = Record(self.Center)
 
         self.SashC = UI.Sash(self, target=self.Center, direction="B", vRange=(0, 250), edge=("LR", "T"))
-        self.SashL = UI.Sash(self, target=self.Gadget, direction="L", vRange=(0, 350), edge=("T", "RB"))
+        self.SashL = UI.Sash(self, target=self.Gadget, direction="L", vRange=(0, 384), edge=("T", "RB"))
         self.SashR = UI.Sash(self, target=self.Harbor, direction="R", vRange=(0, 600), edge=("T", "LB"))
         self.HiderC = UI.Hider(self, targets=(self.Center, self.SashC), orientation="H", edge=("LR", "B"))
         self.HiderL = UI.Hider(self, targets=(self.Gadget, self.SashL), edge="H")

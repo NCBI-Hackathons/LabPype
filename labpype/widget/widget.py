@@ -34,23 +34,30 @@ def Synced(func):
 # ===================================================== BaseWidget =====================================================
 class BaseWidget(Base):
     NAME = ""
+    DESC = ""
+    UNIQUE = False
     DIALOG = None
     THREAD = False
     INTERNAL = None
     INCOMING = None
     PROVIDER = None
     OUTGOING = None
-    SINGLETON = False
 
+    __TYPE__ = "WIDGET"
+    __INITIALIZED__ = False
+    __STATES__ = None
     __ID__ = None
     __RES__ = None
     __ICON__ = None
     __COLOR__ = None
+    __INSTANCE__ = None
     __RECEIVER__ = None
 
     def __new__(cls, *args, **kwargs):
-        if not hasattr(cls, "__INITIALIZED__"):
-            cls.__INITIALIZED__ = True
+        if not cls.__INITIALIZED__:
+            if cls.UNIQUE:
+                if cls.__RECEIVER__ is None:
+                    cls.__RECEIVER__ = []
             if cls.DIALOG in ("H", "V"):
                 cls.DIALOG = type("_AutoDialog" + cls.__name__, (Dialog,), {"ORIENTATION": cls.DIALOG})
             elif isinstance(cls.DIALOG, dict):
@@ -71,18 +78,19 @@ class BaseWidget(Base):
                 pass
             elif not isinstance(cls.OUTGOING, (tuple, list)):
                 cls.OUTGOING = (cls.OUTGOING, "Output", None)
-            if cls.SINGLETON and cls.__RECEIVER__ is None:
-                cls.__RECEIVER__ = []
             for kls, key in cls.PROVIDER:
                 if kls.__RECEIVER__ is None:
                     kls.__RECEIVER__ = []
+            cls.__INITIALIZED__ = True
         return super().__new__(cls)
 
-    def __init__(self, canvas, states):
+    def __init__(self, canvas):
         super().__init__(w=70, h=70)
         self.Canvas = canvas
-        self.LogFail = canvas.GetParent().Record.LogFail
-        self.LogDone = canvas.GetParent().Record.LogDone
+        onEnter = {state: getattr(self, "OnEnter%s" % state, DoNothing) for state in self.__STATES__}
+        onLeave = {state: getattr(self, "OnLeave%s" % state, DoNothing) for state in self.__STATES__}
+        self.OnEnter = lambda s: onEnter[s]()
+        self.OnLeave = lambda s: onLeave[s]()
         self.Bitmap = None
         self.name = None
         self.namePos = None
@@ -101,15 +109,17 @@ class BaseWidget(Base):
         for args in self.INCOMING:
             self.AddAnchor(False, *args)
         for cls, key in self.PROVIDER:
-            self.Data[key] = None
             cls.__RECEIVER__.append(self)
+            self.Data[key] = cls.__INSTANCE__ and cls.__INSTANCE__["OUT"]
         if self.OUTGOING:
-            self.AddAnchor(True, self.OUTGOING[0], "OUT", True, "RBT", self.Canvas.L.Get(self.OUTGOING[1], "ANCHOR_NAME_"), self.OUTGOING[2] if len(self.OUTGOING) > 2 else Anchor)
+            self.AddAnchor(True, self.OUTGOING[0], "OUT", True, "RBT", *self.OUTGOING[1:])
         self.Anchors = self.Incoming + self.Outgoing
-        if self.__class__.SINGLETON:
-            self.__class__.SINGLETON = self
-        self.state = states[0]
-        getattr(self, "OnEnter%s" % self.state, DoNothing)()
+        if self.__class__.UNIQUE:
+            self.__class__.__INSTANCE__ = self
+            for w in self.__RECEIVER__:
+                w.OnAlter()
+        self.state = self.__STATES__[0]
+        self.OnEnter(self.state)
         self.SetName()
         self.Init()
 
@@ -118,14 +128,14 @@ class BaseWidget(Base):
     def Destroy(self):
         self.Exit()
         self.SetState = DoNothing
-        getattr(self, "OnLeave%s" % self.state, DoNothing)()
+        self.OnLeave(self.state)
         if self.Dialog:
             self.Dialog.OnClose()
         self.StopThread()
         for cls, key in self.PROVIDER:
             cls.__RECEIVER__.remove(self)
-        if isinstance(self.__class__.SINGLETON, self.__class__):
-            self.__class__.SINGLETON = True
+        if self.__class__.UNIQUE:
+            self.__class__.__INSTANCE__ = None
             for w in self.__RECEIVER__:
                 w.OnAlter()
         for a in reversed(self.Anchors):
@@ -135,17 +145,14 @@ class BaseWidget(Base):
         self.Data = None
 
     @Synced
-    def IsState(self, state):
-        if isinstance(state, tuple):
-            return self.state in state
-        else:
-            return self.state == state
+    def IsState(self, *states):
+        return self.state in states
 
     @Synced
     def SetState(self, state):
-        getattr(self, "OnLeave%s" % self.state, DoNothing)()
+        self.OnLeave(self.state)
         self.state = state
-        getattr(self, "OnEnter%s" % self.state, DoNothing)()
+        self.OnEnter(self.state)
         wx.CallAfter(self.SetName)
         wx.CallAfter(self.Canvas.ReDraw)
 
@@ -186,9 +193,8 @@ class BaseWidget(Base):
         for a in self.Anchors:
             del self.Pos2Anchor[a.pos][a]
             if a.connected:
-                x = sum(i.x for i in a.connected) / len(a.connected) - self.x - 26
-                y = sum(i.y for i in a.connected) / len(a.connected) - self.y - 26
-                theta = math.atan2(y, x)
+                theta = math.atan2(sum(i.y for i in a.connected) / len(a.connected) - self.y - 26,
+                                   sum(i.x for i in a.connected) / len(a.connected) - self.x - 26)
                 index = math.ceil(theta * 4 / math.pi)
                 a.pos = a.posTable[index]
             else:
@@ -200,7 +206,7 @@ class BaseWidget(Base):
             for index, a in enumerate(sorted(self.Pos2Anchor[p].items(), key=lambda x: x[1])):
                 self._PositionAnchor(a[0], index * 18 + n * 9)
 
-    def _PositionAnchor(self, a, offset=0):
+    def _PositionAnchor(self, a, offset):
         if a.pos == "L":
             ax = -6
         elif a.pos == "R":
@@ -232,6 +238,12 @@ class BaseWidget(Base):
             for a in self.Anchors:
                 a.Draw(dc)
 
+    def LogErr(self, err):
+        wx.CallAfter(self.Canvas.F.Record.LogErr, "%s: %s" % (self.__class__.__name__, err))
+
+    def LogOut(self, out):
+        wx.CallAfter(self.Canvas.F.Record.LogOut, "%s: %s" % (self.__class__.__name__, out))
+
     # -------------------------------------------------------- #
     def GetLinkedWidget(self, key=None):
         if key is None:
@@ -246,7 +258,7 @@ class BaseWidget(Base):
         for a in self.Outgoing:
             for dest in a.connected:
                 yield dest.Widget
-        if self.SINGLETON:
+        if self.UNIQUE:
             for w in self.__RECEIVER__:
                 yield w
 
@@ -255,7 +267,7 @@ class BaseWidget(Base):
             for dest in a.connected:
                 yield dest.Widget
         for cls, key in self.PROVIDER:
-            yield cls.SINGLETON
+            yield cls.__INSTANCE__
 
     def IsOutgoingAvailable(self):
         for a in self.Outgoing:
@@ -268,7 +280,7 @@ class BaseWidget(Base):
             if not a.connected:
                 return False
         for cls, key in self.PROVIDER:
-            if not isinstance(cls.SINGLETON, cls):
+            if cls.__INSTANCE__ is None:
                 return False
         return True
 
@@ -282,17 +294,16 @@ class BaseWidget(Base):
     def UpdateData(self):
         self.UpdateIncoming()
         self.UpdateOutgoing()
+        self.UpdateDialog()
 
     def UpdateIncoming(self):
         for a in self.Incoming:
             self[a.key] = a.Retrieve()
         for cls, key in self.PROVIDER:
-            if isinstance(cls.SINGLETON, cls):
-                self[key] = cls.SINGLETON["OUT"]
+            self[key] = cls.__INSTANCE__ and cls.__INSTANCE__["OUT"]
 
     def UpdateOutgoing(self):
-        for a in self.Outgoing:
-            self[a.key] = None
+        self["OUT"] = None
 
     def UpdateDialog(self):
         if self.Dialog:
@@ -334,6 +345,12 @@ class BaseWidget(Base):
     def OnBegin(self):
         raise NotImplementedError
 
+    def OnAbort(self):
+        raise NotImplementedError
+
+    def OnPause(self):
+        raise NotImplementedError
+
     def OnAlter(self):
         raise NotImplementedError
 
@@ -346,14 +363,14 @@ class BaseWidget(Base):
     def LoadState(self, state):
         raise NotImplementedError
 
-    def Name(self):
-        return self.NAME
-
     def Save(self, data):
         return json.dumps(data)
 
     def Load(self, f):
         return json.load(io.TextIOWrapper(f, "utf-8"))
+
+    def Name(self):
+        pass
 
     def Init(self):
         pass
@@ -364,14 +381,13 @@ class BaseWidget(Base):
 
 # ======================================================= Widget =======================================================
 class Widget(BaseWidget):
-    def __init__(self, canvas):
-        super().__init__(canvas, ("Idle", "Fail", "Done", "Wait", "Work"))
+    __STATES__ = "Idle", "Fail", "Done", "Wait", "Work"
 
     @Synced
     def OnBegin(self):
+        self.OnAlter()
         if not (self.IsIncomingAvailable() and self.IsInternalAvailable()):
-            self.SetState("Fail")
-            return
+            return self.SetState("Fail")
         fail = False
         wait = False
         for w in self.GetIncomingWidget():
@@ -379,7 +395,7 @@ class Widget(BaseWidget):
                 w.OnBegin()
             if w.IsState("Fail"):
                 fail = True
-            elif w.IsState(("Work", "Wait")):
+            elif w.IsState("Work", "Wait"):
                 wait = True
         if fail:
             self.SetState("Fail")
@@ -387,6 +403,14 @@ class Widget(BaseWidget):
             self.SetState("Wait")
         else:
             self.SetState("Work")
+
+    @Synced
+    def OnAbort(self):
+        self.OnAlter()
+
+    @Synced
+    def OnPause(self):
+        pass
 
     @Synced
     def OnAlter(self):
@@ -398,8 +422,8 @@ class Widget(BaseWidget):
                 w.OnAlter()
 
     def OnShowDialog(self):
-        if self.THREAD and self.Dialog:
-            if self.IsState(("Work", "Wait")):
+        if self.THREAD:
+            if self.IsState("Work", "Wait"):
                 self.Dialog[3].Hide()
                 self.Dialog[4].Show()
             else:
@@ -419,16 +443,15 @@ class Widget(BaseWidget):
             self.Dialog[3].Show()
             self.Dialog.Layout()
 
-    def SaveState(self):  # TODO
+    def SaveState(self):
         if self.state in ("Work", "Wait"):
             return "Idle"
         return self.state
 
-    def LoadState(self, state):  # TODO
-        try:
-            self.SetState(state)
-        except Exception as e:
-            print(e)
+    def LoadState(self, state):
+        self.OnLeave(self.state)
+        self.state = state
+        self.OnEnter(self.state)
 
     # -------------------------------------------------------- #
     def Run(self):
@@ -455,10 +478,10 @@ class Widget(BaseWidget):
                     self["OUT"] = out
                     if out is None:
                         self.SetState("Fail")
-                        wx.CallAfter(self.LogFail, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_FAIL"]))
+                        self.LogErr(self.Canvas.L["WIDGET_FAIL"])
                     else:
                         self.SetState("Done")
-                        wx.CallAfter(self.LogDone, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_DONE"]))
+                        self.LogOut(self.Canvas.L["WIDGET_DONE"])
                     self.Thread = None
         except Interrupted:
             pass
@@ -466,7 +489,7 @@ class Widget(BaseWidget):
             with self.Canvas.Lock:
                 if self.IsState("Work") and self.IsCurrentThread():
                     self.SetState("Fail")
-                    wx.CallAfter(self.LogFail, "%s: %s" % (self.__class__.__name__, str(e)))
+                    self.LogErr(str(e))
                     self.Thread = None
 
     def RunDirectly(self):
@@ -474,13 +497,13 @@ class Widget(BaseWidget):
             self["OUT"] = self.Task()
             if self["OUT"] is None:
                 self.SetState("Fail")
-                wx.CallAfter(self.LogFail, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_FAIL"]))
+                self.LogErr(self.Canvas.L["WIDGET_FAIL"])
             else:
                 self.SetState("Done")
-                wx.CallAfter(self.LogDone, "%s: %s" % (self.__class__.__name__, self.Canvas.L["WIDGET_DONE"]))
+                self.LogOut(self.Canvas.L["WIDGET_DONE"])
         except Exception as e:
             self.SetState("Fail")
-            wx.CallAfter(self.LogFail, "%s: %s" % (self.__class__.__name__, str(e)))
+            self.LogErr(str(e))
 
     # -------------------------------------------------------- #
     def OnLeaveIdle(self):

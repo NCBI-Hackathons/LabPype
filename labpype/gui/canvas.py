@@ -98,7 +98,7 @@ class Canvas(UI.BaseControl):
         if len(self.Widget) > 255:
             self.F.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_TOO_MANY_WIDGETS")
             return
-        if isinstance(W.SINGLETON, W):
+        if W.UNIQUE and W.__INSTANCE__:
             self.F.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_SINGLETON_EXISTS")
             return
         w = W(self)
@@ -263,13 +263,9 @@ class Canvas(UI.BaseControl):
                 if evtType == wx.wxEVT_LEFT_DOWN:
                     self.OnSelect(self.Clicked)
                 elif evtType == wx.wxEVT_LEFT_DCLICK:
-                    if evtShift:
-                        self.Clicked.OnAlter()
-                        self.Clicked.OnBegin()
-                    elif self.Clicked.DIALOG:
+                    if self.Clicked.DIALOG and not evtShift:
                         self.Clicked.OnActivation()
                     else:
-                        self.Clicked.OnAlter()
                         self.Clicked.OnBegin()
                 elif evtType == wx.wxEVT_MOTION:
                     for w in self.SelectedWidget:

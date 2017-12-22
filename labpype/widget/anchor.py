@@ -61,6 +61,8 @@ for binPos in range(1, 16):
 
 
 class Anchor(Base):
+    __TYPE__ = "ANCHOR"
+
     def __init__(self, widget, aType, key, multiple, send, pos, name):
         super().__init__(w=6, h=6)
         self.Widget = widget
@@ -137,7 +139,7 @@ class Anchor(Base):
             state = ANCHOR_STATE_IDLE
             if self.Canvas.Hovered == self.Widget or self.Canvas.Hovered in self.Widget.Anchors:
                 pass
-            elif hasattr(self.Canvas.Hovered, "__INITIALIZED__"):
+            elif getattr(self.Canvas.Hovered, "__TYPE__", None) == "WIDGET":
                 for a in self.Canvas.Hovered.Anchors:
                     if LegitLink(a, self):
                         if a.multiple or not a.connected:

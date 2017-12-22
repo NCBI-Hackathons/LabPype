@@ -275,13 +275,12 @@ class Dialog(UI.BaseMain):
     def OnBegin(self):  # Key = 3
         ok = self.AutoSetData() if self.AUTO else True
         self.SetData()
-        self.Widget.OnAlter()
         self.Widget.OnBegin()
         self.Widget.Canvas.ReDraw()
         return ok
 
     def OnAbort(self):  # Key = 4
-        self.Widget.OnAlter()
+        self.Widget.OnAbort()
 
     # --------------------------------------
     def AddStdButton(self, sizer):

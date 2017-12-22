@@ -27,7 +27,7 @@ class Record(stc.StyledTextCtrl):
         super().ClearAll()
         self.SetReadOnly(True)
 
-    def LogFail(self, text):
+    def LogErr(self, text):
         self.SetReadOnly(False)
         self.StartStyling(self.GetLastPosition(), 0xff)
         self.AppendText(text + "\n")
@@ -35,7 +35,7 @@ class Record(stc.StyledTextCtrl):
         self.SetReadOnly(True)
         self.ScrollToEnd()
 
-    def LogDone(self, text):
+    def LogOut(self, text):
         self.SetReadOnly(False)
         self.StartStyling(self.GetLastPosition(), 0xff)
         self.AppendText(text + "\n")
