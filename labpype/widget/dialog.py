@@ -240,8 +240,8 @@ class Dialog(UI.BaseMain):
         self.Harbor.Inner.GetSizer().Detach(self.Sash)
         self.Harbor.SetActualSize()
         self.Harbor.ReDraw()
-        self.Head.Destroy()
-        self.Sash.Destroy()
+        self.Head.DestroyLater()
+        self.Sash.DestroyLater()
 
     def Locate(self):
         self.Widget.Canvas.Play("LOCATE", [self.Widget for _ in range(10)])

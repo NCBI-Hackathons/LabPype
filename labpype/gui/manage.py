@@ -326,12 +326,10 @@ class WidgetItem(UI.Button):
         # Main - Outer - Inner - Title/Panel - Item
         self.Inner = self.GetGrandParent()
         self.Main = self.Inner.GetGrandParent()
-        self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouse)
         self.group = group
         self.todo = None
         self.index = None
         self.pointing = None
-        self.leftDown = False
         self.currentIndex = None
 
     def ChangeGroup(self, group=None, index=None, layout=True):
@@ -341,19 +339,16 @@ class WidgetItem(UI.Button):
         self.Main.AddItem(self, index, layout)
 
     def OnMouse(self, evt):
+        super().OnMouse(evt)
         evtType = evt.GetEventType()
         if evtType == wx.wxEVT_LEFT_DOWN:
-            if not self.HasCapture(): self.CaptureMouse()
-            self.leftDown = True
             self.SetCursor(self.Item.__RES__["CURSOR"])
         elif evtType == wx.wxEVT_LEFT_UP:
-            if self.HasCapture(): self.ReleaseMouse()
             UI.Do(self.todo)
             if self.pointing:
                 self.pointing.Play("LEAVE")
             self.todo = None
             self.pointing = None
-            self.leftDown = False
             self.SetCursor(self.R["CURSOR_NORMAL"])
         elif evtType == wx.wxEVT_MOTION and self.leftDown:
             pos = self.ClientToScreen(evt.GetPosition())
@@ -401,7 +396,6 @@ class WidgetItem(UI.Button):
                 if self.pointing:
                     self.pointing.Play("LEAVE")
                 self.pointing = pointing
-        evt.Skip()
 
     def OnCaptureLost(self, evt):
         if self.pointing:

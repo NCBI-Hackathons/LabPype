@@ -178,29 +178,25 @@ class GadgetItem(UI.Button):
     def __init__(self, parent, item, size):
         super().__init__(parent, size=size, tag=("\n".join(item.NAME.split()), "L", 40), pic=(item.__RES__["BUTTON"], "L", 4), res="L", edge=None)
         self.Item = item
-        self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouse)
         self.Canvas = self.GetTopLevelParent().Canvas
-        self.leftDown = False
+        self.dragging = False
 
     def OnMouse(self, evt):
+        super().OnMouse(evt)
         evtType = evt.GetEventType()
-        if evtType == wx.wxEVT_LEFT_DOWN:
-            if not self.HasCapture(): self.CaptureMouse()
-            self.leftDown = True
-        elif evtType == wx.wxEVT_LEFT_UP:
-            if self.HasCapture(): self.ReleaseMouse()
+        if evtType == wx.wxEVT_LEFT_UP:
             screenPos = self.ClientToScreen(evt.GetPosition())
             if self.Canvas.GetScreenRect().Contains(screenPos):
                 self.Canvas.AddWidget(self.Item, self.Canvas.ScreenToClient(screenPos) - (13, 13))
-            self.leftDown = False
+            self.dragging = False
             self.SetCursor(self.R["CURSOR_NORMAL"])
         elif evtType == wx.wxEVT_LEFT_DCLICK:
             self.Canvas.AddWidget(self.Item)
-        elif evtType == wx.wxEVT_MOTION and self.leftDown:
-            self.leftDown = False
+        elif evtType == wx.wxEVT_MOTION and self.leftDown and not self.dragging:
+            self.dragging = True
             self.SetCursor(self.Item.__RES__["CURSOR"])
-        evt.Skip()
 
     def OnCaptureLost(self, evt):
         self.leftDown = False
+        self.dragging = False
         self.SetCursor(self.R["CURSOR_NORMAL"])
