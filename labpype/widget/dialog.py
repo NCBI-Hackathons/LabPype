@@ -7,7 +7,6 @@ from .field import *
 __all__ = ["Dialog", "DisableCanvas"]
 
 SIZE_BTN = wx.Size(20, 20)
-SIZE_BTN_BOLD = wx.Size(32, 20)
 SF_HEAD = wx.SizerFlags().Expand().Border(wx.TOP, 2)
 SF_MAIN = wx.SizerFlags().Expand().Border(wx.ALL, 2)
 SF_SASH = wx.SizerFlags().Expand().Border(wx.BOTTOM, 6)
@@ -118,55 +117,64 @@ class Dialog(UI.BaseMain):
     def __init__(self, parent, widget):
         super().__init__(parent, size=self.SIZE or wx.DefaultSize)  # MainFrame - DialogFrame - Dialog
         self.Widget = widget
-        self.Frame.SetIcon(self.Widget.__RES__["DIALOG"])
-        self.Frame.OnClose = self.OnClose
+        self.Frame.SetIcon(widget.__RES__["DIALOG"])
         self.Harbor = self.GetGrandParent().Harbor
         self.Head = None
         self.Sash = None
         self.detached = True
-        self.Auto = {}
         MainSizer = wx.BoxSizer({"H": wx.HORIZONTAL, "V": wx.VERTICAL}[self.ORIENTATION] if self.ORIENTATION in ("V", "H") else self.ORIENTATION)
-        Sizer = self.Initialize(MainSizer) or MainSizer
-        if self.AUTO and self.Widget.INTERNAL:
-            for f in self.Widget.INTERNAL:
-                if isinstance(f, str):
-                    continue
-                key = f.key
-                cls = f.__class__
-                label = self.L.Get(f.label, "WIDGET_DLG_")
-                if "hint" in f.kwargs:
-                    f.kwargs["hint"] = self.L.Get(f.kwargs["hint"], "WIDGET_DLG_")
-                if issubclass(cls, BooleanField):
-                    tags = self.L.Get(f.tag1, "WIDGET_DLG_"), self.L.Get(f.tag2, "WIDGET_DLG_")
-                    self.Auto[key] = self.AddButtonToggle(Sizer, label=label, tags=tags, toggle=self.GetDefaultData(key, 0), **f.kwargs).IsToggled
-                elif issubclass(cls, IntegerField):
-                    self.Auto[key] = self.AddLineCtrl(Sizer, label=label, value=str(self.GetDefaultData(key, "")), **f.kwargs).GetValue
-                elif issubclass(cls, FloatField):
-                    self.Auto[key] = self.AddLineCtrl(Sizer, label=label, value=str(self.GetDefaultData(key, "")), **f.kwargs).GetValue
-                elif issubclass(cls, LineField):
-                    self.Auto[key] = self.AddLineCtrl(Sizer, label=label, value=self.GetDefaultData(key, ""), **f.kwargs).GetValue
-                elif issubclass(cls, TextField):
-                    self.Auto[key] = self.AddTextCtrl(Sizer, label=label, value=self.GetDefaultData(key, ""), **f.kwargs).GetValue
-                elif issubclass(cls, ChoiceField):
-                    choices = tuple(self.L.Get(i, "WIDGET_DLG_") if isinstance(i, str) else str(i) for i in f.choices)
-                    selected = -1 if self.Widget[key] is None else f.choices.index(self.Widget[key])
-                    if f.widget == "L":
-                        self.Auto[key] = self.AddListBox(Sizer, label=label, choices=choices, selected=selected, **f.kwargs).GetSelection
-                    elif f.widget == "B":
-                        self.Auto[key] = self.AddButtonBundle(Sizer, label=label, tags=choices, toggled=selected, group="_" + key, **f.kwargs).GetToggled
-                    else:
-                        self.Auto[key] = self.AddPickerValue(Sizer, label=label, choices=choices, selected=selected, **f.kwargs).GetSelection
-                elif issubclass(cls, FileField):
-                    self.Auto[key] = self.AddPickerFile(Sizer, label=label, value=self.GetDefaultData(key, ""), **f.kwargs).GetValue
-        self.Finalize(MainSizer)
+        self.AddFieldCtrl(self.Initialize(MainSizer) or MainSizer)
+        self.AddStdButton(self.Finalize(MainSizer) or MainSizer)
         self.SetSizer(MainSizer)
 
     # --------------------------------------
+    def AddFieldCtrl(self, sizer):
+        self.AutoGet = {}
+        self.AutoSet = {}
+        if self.AUTO:
+            for field in self.Widget.INTERNAL:
+                if isinstance(field, str):
+                    continue
+                key = field.key
+                cls = field.__class__
+                label = self.L.Get(field.label, "WIDGET_DLG_")
+                if "hint" in field.kwargs:
+                    field.kwargs["hint"] = self.L.Get(field.kwargs["hint"], "WIDGET_DLG_")
+                if issubclass(cls, BooleanField):
+                    tags = self.L.Get(field.tag1, "WIDGET_DLG_"), self.L.Get(field.tag2, "WIDGET_DLG_")
+                    self[key] = self.AddButtonToggle(sizer, label, tags=tags, toggle=self.GetDefaultData(key, 0), **field.kwargs)
+                    self.AutoGet[key] = self[key].IsToggled
+                    self.AutoSet[key] = self[key].SetToggle
+                elif issubclass(cls, (IntegerField, FloatField, LineField)):
+                    self[key] = self.AddLineCtrl(sizer, label, value=str(self.GetDefaultData(key, "")), **field.kwargs)
+                    self.AutoGet[key] = self[key].GetValue
+                    self.AutoSet[key] = self[key].SetValue
+                elif issubclass(cls, TextField):
+                    self[key] = self.AddTextCtrl(sizer, label, value=self.GetDefaultData(key, ""), **field.kwargs)
+                    self.AutoGet[key] = self[key].GetValue
+                    self.AutoSet[key] = self[key].SetValue
+                elif issubclass(cls, ChoiceField):
+                    choices = tuple(self.L.Get(i, "WIDGET_DLG_") if isinstance(i, str) else str(i) for i in field.choices)
+                    selected = -1 if self.Widget[key] is None else field.choices.index(self.Widget[key])
+                    if field.widget == "L":
+                        AddXXX = self.AddListBox
+                    elif field.widget == "B":
+                        AddXXX = self.AddButtonBundle
+                    else:
+                        AddXXX = self.AddPickerValue
+                    self[key] = AddXXX(sizer, label, choices=choices, selected=selected, **field.kwargs)
+                    self.AutoGet[key] = self[key].GetSelection
+                    self.AutoSet[key] = self[key].SetSelection
+                elif issubclass(cls, FileField):
+                    self[key] = self.AddPickerFile(sizer, label, value=self.GetDefaultData(key, ""), **field.kwargs)
+                    self.AutoGet[key] = self[key].GetValue
+                    self.AutoSet[key] = self[key].SetValue
+
     def AutoSetData(self):
         ok = True
         for field in self.Widget.INTERNAL:
             if isinstance(field, BaseField):
-                v = field.Validate(UI.Do(self.Auto[field.key]))
+                v = field.Validate(UI.Do(self.AutoGet[field.key]))
                 if v is None:
                     ok = False
                     self.Widget[field.key] = None
@@ -174,10 +182,10 @@ class Dialog(UI.BaseMain):
                     self.Widget[field.key] = v
         return ok
 
-    def GetDefaultData(self, key, null):
+    def GetDefaultData(self, key, default):
         if self.Widget[key] is not None:
             return self.Widget[key]
-        return null
+        return default
 
     # --------------------------------------
     def EnableCanvas(self):
@@ -284,16 +292,17 @@ class Dialog(UI.BaseMain):
 
     # --------------------------------------
     def AddStdButton(self, sizer):
-        self[0] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_CROSS"], edge="D", func=self.OnClose)
+        size = wx.Size(40, self.LINE_HEIGHT)
+        self[0] = UI.ToolNormal(self, size=size, pics=self.R["AP_CROSS"], edge="D", func=self.OnClose)
         if self.Widget.THREAD:
-            self[3] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_BEGIN"], edge="D", func=self.OnBegin)
-            self[4] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_ABORT"], edge="D", func=self.OnAbort)
+            self[3] = UI.ToolNormal(self, size=size, pics=self.R["AP_BEGIN"], edge="D", func=self.OnBegin)
+            self[4] = UI.ToolNormal(self, size=size, pics=self.R["AP_ABORT"], edge="D", func=self.OnAbort)
         elif self.TASK:
-            self[3] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_BEGIN"], edge="D", func=self.OnBegin)
+            self[3] = UI.ToolNormal(self, size=size, pics=self.R["AP_BEGIN"], edge="D", func=self.OnBegin)
         else:
-            self[1] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_CHECK"], edge="D", func=self.OnReady)
+            self[1] = UI.ToolNormal(self, size=size, pics=self.R["AP_CHECK"], edge="D", func=self.OnReady)
         if self.Widget.INTERNAL or self.Widget.INCOMING:
-            self[2] = UI.ToolNormal(self, size=SIZE_BTN_BOLD, pics=self.R["AP_APPLY"], edge="D", func=self.OnApply)
+            self[2] = UI.ToolNormal(self, size=size, pics=self.R["AP_APPLY"], edge="D", func=self.OnApply)
         subSizer = sizer if sizer.GetOrientation() == wx.HORIZONTAL else wx.BoxSizer(wx.HORIZONTAL)
         for i in (3, 4, 1, 0, 2):
             if i in self:
@@ -306,7 +315,7 @@ class Dialog(UI.BaseMain):
         pass
 
     def Finalize(self, Sizer):
-        self.AddStdButton(Sizer)
+        pass
 
     def GetData(self):
         pass

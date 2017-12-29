@@ -23,7 +23,6 @@ SF_NEW = wx.SizerFlags().Expand().Border(wx.ALL, 4)
 class Main(UI.Scrolled):
     def __init__(self, parent):
         super().__init__(parent, edge=None)
-        parent.OnClose = self.OnClose
         self.F = parent.GetParent()  # MainFrame -> BaseDialog -> Main
         self.AddScrollBar((0, 12))
 
@@ -428,7 +427,6 @@ BLOCK_SIZE = 1024 * 8
 class Downloader(UI.BaseMain):
     def __init__(self, parent):
         super().__init__(parent, size=wx.Size(480, -1))
-        parent.OnClose = self.OnClose
         self.F = self.GetGrandParent()
         Sizer = wx.BoxSizer(wx.VERTICAL)
         SubSizer = wx.BoxSizer(wx.HORIZONTAL)

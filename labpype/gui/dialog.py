@@ -42,23 +42,23 @@ class SaveDialog(UI.BaseMain):
         self["FILE"] = self.AddPickerFile(Sizer, mode="S", value=self.F.T["LAST_FILE"],
                                           wildcard="All files (*.pa,*.pas)|*.pa;*.pas|Project files (*.pa)|*.pa|Scheme files (*.pas)|*.pas", onSelect=self.OnChooseFile)
         Sizer.Add(SubSizer, 1, wx.EXPAND)
-        self["MODE"] = self.AddButtonBundle(SubSizer, tags=(self.L["DIALOG_SAVE_MODE_S"], self.L["DIALOG_SAVE_MODE_P"]),
-                                            group="_SAVE_MODE_", width=100, toggled=self.F.T["LAST_FILE"].lower().endswith(".pa"), onClick=self.OnMode)
+        self["MODE"] = self.AddButtonBundle(SubSizer, choices=(self.L["DIALOG_SAVE_MODE_S"], self.L["DIALOG_SAVE_MODE_P"]),
+                                            width=100, selected=self.F.T["LAST_FILE"].lower().endswith(".pa"), onClick=self.OnMode)
         SubSizer.Add(4, 4, 1)
-        self.AddStdButton(SubSizer, size=(60, 20), onOK=self.OnSave, onCancel=self.Frame.OnClose)
+        self.AddStdButton(SubSizer, onOK=self.OnSave, onCancel=self.Frame.OnClose)
         self.SetSizer(Sizer)
 
     def OnMode(self):
-        if self["FILE"].GetValue().lower().endswith(".pa") and self["MODE"].GetToggled() == 0:
+        if self["FILE"].GetValue().lower().endswith(".pa") and self["MODE"].GetSelection() == 0:
             self["FILE"].SetValue(self["FILE"].GetValue()[:-2] + "pas")
-        elif self["FILE"].GetValue().lower().endswith(".pas") and self["MODE"].GetToggled() == 1:
+        elif self["FILE"].GetValue().lower().endswith(".pas") and self["MODE"].GetSelection() == 1:
             self["FILE"].SetValue(self["FILE"].GetValue()[:-1])
 
     def OnChooseFile(self):
         if self["FILE"].GetValue().lower().endswith(".pa"):
-            self["MODE"].SetToggled(1)
+            self["MODE"].SetSelection(1)
         elif self["FILE"].GetValue().lower().endswith(".pas"):
-            self["MODE"].SetToggled(0)
+            self["MODE"].SetSelection(0)
 
     def OnSave(self):
         fp = self["FILE"].GetValue()
@@ -89,10 +89,10 @@ class LoadDialog(UI.BaseMain):
                                           wildcard="All files (*.pa,*.pas)|*.pa;*.pas|Project files (*.pa)|*.pa|Scheme files (*.pas)|*.pas")
         self.AddSeparator(Sizer)
         Sizer.Add(SubSizer2, 0, wx.EXPAND)
-        self["MODE"] = self.AddButtonBundle(SubSizer2, tags=(self.L["DIALOG_LOAD_MODE_A"], self.L["DIALOG_LOAD_MODE_O"]), toggled=0, group="_OPEN_MODE_", width=80)
+        self["MODE"] = self.AddButtonBundle(SubSizer2, choices=(self.L["DIALOG_LOAD_MODE_A"], self.L["DIALOG_LOAD_MODE_O"]), selected=0, width=80)
         self["ONLY"] = self.AddButtonToggle(SubSizer2, tags=(self.L["DIALOG_LOAD_ONLY_N"], self.L["DIALOG_LOAD_ONLY_Y"]), toggle=False, width=160)
         SubSizer2.Add(4, 4, 1)
-        self.AddStdButton(SubSizer2, size=(60, 20), onOK=self.OnLoad, onCancel=self.Frame.OnClose)
+        self.AddStdButton(SubSizer2, onOK=self.OnLoad, onCancel=self.Frame.OnClose)
         self.SetSizer(Sizer)
         self["LB_S"].SetLineHeight()
         self["LB_P"].SetLineHeight()
@@ -120,7 +120,7 @@ class LoadDialog(UI.BaseMain):
 
     def OnLoad(self):
         if self["FILE"].GetValue():
-            if self.F.OnLoad(self["FILE"].GetValue(), append=self["MODE"].GetToggled() == 0, schemeOnly=self["ONLY"].IsToggled()):
+            if self.F.OnLoad(self["FILE"].GetValue(), append=self["MODE"].GetSelection() == 0, schemeOnly=self["ONLY"].IsToggled()):
                 return self.Frame.OnClose()
         wx.Bell()
 
