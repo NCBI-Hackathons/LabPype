@@ -13,14 +13,10 @@ class Gadget(UI.Scrolled):
         super().__init__(parent, size=size, edge="H")
         self.F = parent
         self.AddScrollBar((0, 12))
-        self.Tool = UI.Tool(self, size=wx.Size(-1, 26), itemSize=wx.Size(24, 24), bg="D", edge="EM")
-        self.Tool.SizerFlags1 = wx.SizerFlags().Expand().Border(wx.TOP | wx.BOTTOM, 1)
-        self.Tool.SizerFlags2 = wx.SizerFlags().Center().Border(wx.TOP | wx.BOTTOM, 1)
-        self.Tool.AddItems(1,
-                           ("T", "TOOL_T_SHOW", self.OnGroup, {"toggle": self.S["TOGGLE_G_GROUP"]}),
+        self.Tool = UI.Tool(self, size=wx.Size(-1, 26), itemSize=wx.Size(24, 24), itemSpace=0, edge="EM")
+        self.Tool.AddItems(("T", "TOOL_T_SHOW", self.OnGroup, {"toggle": self.S["TOGGLE_G_GROUP"]}),
                            ("T", "TOOL_T_TEXT", self.OnLabel, {"toggle": self.S["TOGGLE_G_LABEL"]}), "|", "|",
-                           ("N", "TOOL_MANAGE", parent.OnShowManage),
-                           1)
+                           ("N", "TOOL_MANAGE", parent.OnShowManage))
         self.Tool["GADGET_SEARCH"] = UI.Text(self.Tool, size=wx.Size(-1, 20), style=wx.BORDER_NONE)
         self.Tool["GADGET_SEARCH"].Bind(wx.EVT_TEXT, self.OnSearch)
         self.Tool["GADGET_SEARCH"].Bind(wx.EVT_ENTER_WINDOW, lambda evt: self.F.SetStatus(self.L["GADGET_SEARCH"]))

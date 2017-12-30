@@ -174,8 +174,8 @@ class MainFrame(wx.Frame):
 
     # --------------------------------------
     def OnSimpleDialog(self, titleKey, textKey, titleData=None, textData=None, onOK=None, unique=False):
-        title = self.L[titleKey] if titleData is None else (self.L[titleKey] % titleData)
-        text = self.L[textKey] if textData is None else (self.L[textKey] % textData)
+        title = self.L.Get(titleKey) if titleData is None else (self.L.Get(titleKey) % titleData)
+        text = self.L.Get(textKey) if textData is None else (self.L.Get(textKey) % textData)
         if unique:
             if self.D.get(textKey):
                 self.D[textKey].SetFocus()

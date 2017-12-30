@@ -9,26 +9,29 @@ __all__ = ["Resource"]
 
 
 class Resource(UI.Resource):
+    DEFAULT = {
+        "FONTFACE_CANVAS"  : "",
+        "FONTFACE_MAIN"    : "",
+        "FONTFACE_FIXED"   : "",
+        "COLOR_CONNECTION" : "#ddeeff",
+        "COLOR_SELECTION"  : "#00c0ff",
+        "COLOR_WIDGET_DONE": "#00ff00",
+        "COLOR_WIDGET_WAIT": "#ffaa55",
+        "COLOR_WIDGET_WORK": "#ffff00",
+        "COLOR_WIDGET_FAIL": "#ff0000",
+        "COLOR_ANCHOR_RECV": "#ffffff",
+        "COLOR_ANCHOR_SEND": "#80ffff",
+        "COLOR_ANCHOR_PASS": "#00ff00",
+        "COLOR_ANCHOR_FAIL": "#ff0000",
+    }
+
     def __init__(self, fp):
         super().__init__(fp)
         self["__LabPype__"] = Img.LabPype.GetIcon()
-        # Color
-        for key, default in {
-            "FONTFACE_CANVAS"  : wx.SystemSettings().GetFont(wx.SYS_DEFAULT_GUI_FONT).GetFaceName(),
-            "FONTFACE_MAIN"    : wx.SystemSettings().GetFont(wx.SYS_DEFAULT_GUI_FONT).GetFaceName(),
-            "FONTFACE_FIXED"   : "Consolas",
-            "COLOR_CONNECTION" : "#ddeeff",
-            "COLOR_SELECTION"  : "#00c0ff",
-            "COLOR_WIDGET_DONE": "#00ff00",
-            "COLOR_WIDGET_WAIT": "#ffaa55",
-            "COLOR_WIDGET_WORK": "#ffff00",
-            "COLOR_WIDGET_FAIL": "#ff0000",
-            "COLOR_ANCHOR_RECV": "#ffffff",
-            "COLOR_ANCHOR_SEND": "#80ffff",
-            "COLOR_ANCHOR_PASS": "#00ff00",
-            "COLOR_ANCHOR_FAIL": "#ff0000",
-        }.items():
-            self[key] = self.dict.get(key, default)
+        if self["FONTFACE_CANVAS"] == "":
+            self["FONTFACE_CANVAS"] = wx.SystemSettings().GetFont(wx.SYS_DEFAULT_GUI_FONT).GetFaceName()
+        if self["FONTFACE_FIXED"] == "":
+            self["FONTFACE_FIXED"] = wx.SystemSettings().GetFont(wx.SYS_ANSI_FIXED_FONT).GetFaceName()
         # GUI
         self["PEN_CONNECTION"] = wx.Pen(self["COLOR_CONNECTION"], 3)
         self["PEN_CONNECTION_SELECTION1"] = wx.Pen(self["COLOR_SELECTION"], 11)
@@ -46,8 +49,12 @@ class Resource(UI.Resource):
         self["BRUSH_ANCHOR_FAIL"] = wx.Brush(self["COLOR_ANCHOR_FAIL"])
         # Font
         self.SetMainFont(9, self["FONTFACE_MAIN"])
-        self["FONT_CANVAS"] = wx.Font(10, 70, 90, wx.FONTWEIGHT_BOLD, False, self["FONTFACE_CANVAS"])
-        self["FONT_FIXED"] = wx.Font(9, 70, 90, 90, False, self["FONTFACE_FIXED"])
+        self["FONT_H1"] = wx.Font(24, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False, self["FONTFACE_MAIN"])
+        self["FONT_H2"] = wx.Font(20, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False, self["FONTFACE_MAIN"])
+        self["FONT_H3"] = wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False, self["FONTFACE_MAIN"])
+        self["FONT_H4"] = wx.Font(12, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False, self["FONTFACE_MAIN"])
+        self["FONT_CANVAS"] = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False, self["FONTFACE_CANVAS"])
+        self["FONT_FIXED"] = wx.Font(8, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False, self["FONTFACE_FIXED"])
         # Bitmap
         for key in ("TOOL_OPTION", "TOOL_DELETE",
                     "TOOL_FILE_N", "TOOL_FILE_O", "TOOL_FILE_S",

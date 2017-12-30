@@ -98,7 +98,7 @@ class LoadDialog(UI.BaseMain):
         self["LB_P"].SetLineHeight()
         self["LB_S"].SetLineHeight(self["LB_S"].LineHeight * 2)
         self["LB_P"].SetLineHeight(self["LB_P"].LineHeight * 2)
-        self["MODE"][1].SetRes("R")
+        self["MODE"][1].SetRES("R")
 
     def OnChooseFile(self):
         if self["FILE"].GetValue().lower().endswith(".pa") and self["ONLY"].IsToggled():

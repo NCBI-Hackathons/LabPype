@@ -16,10 +16,16 @@ DisableCanvas = lambda func: lambda self: (self.DisableCanvas(), func(self), sel
 
 # ==================================================== DetachedHead ====================================================
 class DetachedHead(UI.BaseHead):
-    def __init__(self, parent):
+    def __init__(self, parent, help):
         super().__init__(parent, buttons=False)
-        self.GetSizer().Insert(1, UI.ToolNormal(self, size=UI.SETTINGS["DLG_HEAD_BTN"], pics=self.R["DIALOG_LOCA"], func=self.Frame.Main.Locate), self.SizerFlags)
-        self.GetSizer().Insert(1, UI.ToolNormal(self, size=UI.SETTINGS["DLG_HEAD_BTN"], pics=self.R["DIALOG_ATCH"], func=self.Frame.Main.Attach), self.SizerFlags)
+        size = UI.SETTINGS["DLG_HEAD_BTN"]
+        Sizer = self.GetSizer()
+        Sizer.Insert(1, UI.ToolNormal(self, size=size, pics=self.R["DIALOG_LOCA"], func=self.Frame.Main.Locate), self.SizerFlags)
+        Sizer.Insert(1, UI.ToolNormal(self, size=size, pics=self.R["DIALOG_ATCH"], func=self.Frame.Main.Attach), self.SizerFlags)
+        if help:
+            Sizer.Insert(0, UI.ToolNormal(self, size=size, pics=self.R["AP_HELP"], func=(self.GetGrandParent().OnSimpleDialog, "GENERAL_HEAD_HELP", help)), self.SizerFlags)
+            Sizer.Insert(0, 3, 0)
+            self.SetTagOffset(self.TagOffset[0] + size[0], self.TagOffset[1])
 
     def OnMouse(self, evt):  # TODO Multiple screen see wx.Display
         if evt.GetEventType() == wx.wxEVT_MOTION and self.lastMousePos:
@@ -94,9 +100,10 @@ def MakeWidgetDialog(widget):
                           title=widget.NAME,
                           style=wx.FRAME_FLOAT_ON_PARENT,
                           main=(widget.DIALOG, {"widget": widget}),
-                          head=DetachedHead)
+                          head=(DetachedHead, {"help": widget.DIALOG.HELP}),
+                          grip={"minSize": widget.DIALOG.MIN_SIZE}, )
     x, y = widget.DialogSize or Frame.GetEffectiveMinSize()
-    Frame.SetSize((max(x, 120), max(y, UI.SETTINGS["DLG_HEAD"] + 10)))
+    Frame.SetSize((max(x, widget.DIALOG.MIN_SIZE[0]), max(y, UI.SETTINGS["DLG_HEAD"] + widget.DIALOG.MIN_SIZE[1])))
     Frame.SetPosition(widget.DialogPos or UI.EnsureWindowInScreen(widget.Canvas.ClientToScreen(widget.GetPosition() + wx.Point(64, 0)), (x, y)))
     Frame.Main.GetData()
     Frame.Play("FADEIN")
@@ -106,8 +113,10 @@ def MakeWidgetDialog(widget):
 # ======================================================= Dialog =======================================================
 class Dialog(UI.BaseMain):
     AUTO = True
+    HELP = None
     TASK = False
     SIZE = None
+    MIN_SIZE = (120, 40)
     ORIENTATION = wx.VERTICAL
     MARGIN = 2
     LABEL_WIDTH = 80
@@ -238,7 +247,10 @@ class Dialog(UI.BaseMain):
             # self.Frame.Refresh()
             self.Frame.Show()
             self.Frame.SetFocus()
-            if not self.Harbor.Inner.GetChildren():
+            for i in self.Harbor.Inner.GetChildren():
+                if isinstance(i, Dialog):
+                    break
+            else:
                 self.Harbor.GetParent().HiderR.Click()
             self.Widget.Canvas.ReDraw()
 
@@ -266,8 +278,8 @@ class Dialog(UI.BaseMain):
             self.Frame.Play("FADEOUT")
         else:
             self._RemoveFromHarbor()
-            self.Frame.Destroy()
             self.Destroy()
+            self.Frame.Destroy()
 
     def OnReady(self):  # Key = 1
         if self.OnBegin():

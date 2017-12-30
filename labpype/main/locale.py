@@ -58,6 +58,7 @@ Locale.DEFAULT = {
     "GENERAL_HEAD_FAIL"   : "An error has occurred",
     "GENERAL_HEAD_LOAD"   : "Load...",
     "GENERAL_HEAD_SAVE"   : "Save...",
+    "GENERAL_HEAD_HELP"   : "Help",
 
     "GENERAL_READY"       : "OK",
     "GENERAL_BEGIN"       : "Run",

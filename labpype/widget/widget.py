@@ -130,6 +130,7 @@ class BaseWidget(Base):
         self.SetState = DoNothing
         self.OnLeave(self.state)
         if self.Dialog:
+            self.Dialog.GetData = DoNothing
             self.Dialog.OnClose()
         self.StopThread()
         for cls, key in self.PROVIDER:
@@ -307,9 +308,13 @@ class BaseWidget(Base):
 
     def UpdateDialog(self):
         if self.Dialog:
+            wx.CallAfter(self._UpdateDialog)
+
+    def _UpdateDialog(self):
+        if self.Dialog:
             if not self.Dialog.detached:
-                wx.CallAfter(self.Dialog.Head.Play, "ENTER_THEN_LEAVE")
-            wx.CallAfter(self.Dialog.GetData)
+                self.Dialog.Head.Play("ENTER_THEN_LEAVE")
+            self.Dialog.GetData()
 
     def OnActivation(self):
         if self.Dialog:
