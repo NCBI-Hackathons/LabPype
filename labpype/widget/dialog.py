@@ -315,12 +315,14 @@ class Dialog(UI.BaseMain):
             self[1] = UI.ToolNormal(self, size=size, pics=self.R["AP_CHECK"], edge="D", func=self.OnReady)
         if self.Widget.INTERNAL or self.Widget.INCOMING:
             self[2] = UI.ToolNormal(self, size=size, pics=self.R["AP_APPLY"], edge="D", func=self.OnApply)
-        subSizer = sizer if sizer.GetOrientation() == wx.HORIZONTAL else wx.BoxSizer(wx.HORIZONTAL)
+        if sizer.GetOrientation() == wx.HORIZONTAL:
+            subSizer = sizer
+            sizer.Add(4, 4, 1)
+        else:
+            subSizer = self.AddPerpendicularSizer(sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 0)
         for i in (3, 4, 1, 0, 2):
             if i in self:
                 subSizer.Add(self[i], 0, wx.ALL, self.MARGIN)
-        if subSizer is not sizer:
-            sizer.Add(subSizer, 0, wx.ALIGN_RIGHT | wx.ALL, 0)
 
     # --------------------------------------
     def Initialize(self, Sizer):

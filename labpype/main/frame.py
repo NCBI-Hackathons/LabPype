@@ -266,6 +266,9 @@ class MainFrame(wx.Frame):
                     if data[wId][0] not in self.M.Widgets:
                         self.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_UNKNOWN_WIDGET", textData=data[wId][0])
                         return False
+                    if append and self.M.Widgets[data[wId][0]].UNIQUE and self.M.Widgets[data[wId][0]].__INSTANCE__:
+                        self.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_SINGLETON_EXIST", textData=data[wId][0])
+                        return False
                 if not append:
                     self.OnClear()
                 widget = self.SetScheme(data, setState=not schemeOnly)

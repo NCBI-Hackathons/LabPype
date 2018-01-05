@@ -12,6 +12,7 @@ Locale.DEFAULT = {
 
     "WIDGET_FAIL"         : "Task failed",
     "WIDGET_DONE"         : "Task done",
+    "WIDGET_NOT_DEFINED"  : "Widget task not defined",
 
     "GADGET_SEARCH"       : "Search Widgets",
     "GADGET_CANCEL"       : "Clear search",
@@ -51,7 +52,9 @@ Locale.DEFAULT = {
     "MSG_SINGLETON_EXISTS": "This widget can only have one instance!",
     "MSG_CIRCULAR_LINKAGE": "Circular reference is not allowed!",
     "MSG_WORKSPACE_FAIL"  : "Failed to use \"%s\" as workspace.",
-    "MSG_UNKNOWN_WIDGET"  : "Failed to load the file: Unknown widget %s",
+    "MSG_UNKNOWN_WIDGET"  : "Failed to load the file.\nUnknown widget %s",
+    "MSG_SINGLETON_EXIST" : "Failed to load the file.\nUnique widget already exists: %s\n"
+                            "Please remove it first or open this file instead",
     "MSG_LOAD_FILE_FAILED": "Failed to load the file!",
     "MSG_SAVE_FILE_FAILED": "Failed to save the file!",
 
@@ -107,5 +110,6 @@ Locale.DEFAULT = {
                             "The following packages cannot be installed:\n%s\n\n"
                             "The following packages will be installed once all the dependencies have been installed:\n%s\n\n"
                             "Please install the following and restart LabPype to finish installing:\n%s",
-
+    "MSG_PKG_DELETE_HEAD" : "Package uninstall",
+    "MSG_PKG_IN_USE_FAIL" : "Package %s cannot be deleted.\nThe following widget(s) are currenly being used:\n%s",
 }

@@ -58,6 +58,8 @@ class BaseWidget(Base):
             if cls.UNIQUE:
                 if cls.__RECEIVER__ is None:
                     cls.__RECEIVER__ = []
+            else:
+                cls.__INSTANCE__ = []
             if cls.DIALOG in ("H", "V"):
                 cls.DIALOG = type("_AutoDialog" + cls.__name__, (Dialog,), {"ORIENTATION": cls.DIALOG})
             elif isinstance(cls.DIALOG, dict):
@@ -118,6 +120,8 @@ class BaseWidget(Base):
             self.__class__.__INSTANCE__ = self
             for w in self.__RECEIVER__:
                 w.OnAlter()
+        else:
+            self.__class__.__INSTANCE__.append(self)
         self.state = self.__STATES__[0]
         self.OnEnter(self.state)
         self.SetName()
@@ -139,6 +143,8 @@ class BaseWidget(Base):
             self.__class__.__INSTANCE__ = None
             for w in self.__RECEIVER__:
                 w.OnAlter()
+        else:
+            self.__class__.__INSTANCE__.remove(self)
         for a in reversed(self.Anchors):
             a.EmptyTarget(a.send)
             a.ReleaseID()
@@ -419,12 +425,12 @@ class Widget(BaseWidget):
 
     @Synced
     def OnAlter(self):
-        self.SetState("Idle")
+        if not self.IsState("Idle"):
+            self.SetState("Idle")
         self.StopThread()
         self.UpdateData()
         for w in self.GetOutgoingWidget():
-            if not w.IsState("Idle"):
-                w.OnAlter()
+            w.OnAlter()
 
     def OnShowDialog(self):
         if self.THREAD:
@@ -565,7 +571,7 @@ class Widget(BaseWidget):
 
     # -------------------------------------------------------- #
     def Task(self):
-        return
+        raise Exception(self.Canvas.L["WIDGET_NOT_DEFINED"])
 
     def Reset(self):
         pass

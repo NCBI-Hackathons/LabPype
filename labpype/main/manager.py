@@ -192,6 +192,10 @@ class Manager(object):
 
     def DelPackage(self, pkgName):
         pkg = self.Packages[pkgName]
+        inUse = [w.NAME for w in pkg.__WIDGET__ if w.__INSTANCE__]
+        if inUse:
+            self.F.OnSimpleDialog("MSG_PKG_DELETE_HEAD", "MSG_PKG_IN_USE_FAIL", textData=(pkgName, "\n".join(inUse)))
+            return
         self.F.Gadget.DelItems(pkg.__RAW_GROUP__)
         if self.F.Manage:
             self.F.Manage.DelItems(pkg.__RAW_GROUP__)

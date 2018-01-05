@@ -17,7 +17,7 @@ class Gadget(UI.Scrolled):
         self.Tool.AddItems(("T", "TOOL_T_SHOW", self.OnGroup, {"toggle": self.S["TOGGLE_G_GROUP"]}),
                            ("T", "TOOL_T_TEXT", self.OnLabel, {"toggle": self.S["TOGGLE_G_LABEL"]}), "|", "|",
                            ("N", "TOOL_MANAGE", parent.OnShowManage))
-        self.Tool["GADGET_SEARCH"] = UI.Text(self.Tool, size=wx.Size(-1, 20), style=wx.BORDER_NONE)
+        self.Tool["GADGET_SEARCH"] = UI.Text(self.Tool, size=wx.Size(-1, 20), edge=False)
         self.Tool["GADGET_SEARCH"].Bind(wx.EVT_TEXT, self.OnSearch)
         self.Tool["GADGET_SEARCH"].Bind(wx.EVT_ENTER_WINDOW, lambda evt: self.F.SetStatus(self.L["GADGET_SEARCH"]))
         self.Tool["GADGET_CANCEL"] = UI.Button(self.Tool, size=wx.Size(24, 24), tag="x", edge=None, func=self.OnCancel)
