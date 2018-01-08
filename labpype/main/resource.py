@@ -9,7 +9,7 @@ __all__ = ["Resource"]
 
 
 class Resource(UI.Resource):
-    DEFAULT = {
+    UI.Resource.DEFAULT.update({
         "FONTFACE_CANVAS"  : "",
         "FONTFACE_MAIN"    : "",
         "FONTFACE_FIXED"   : "",
@@ -23,7 +23,7 @@ class Resource(UI.Resource):
         "COLOR_ANCHOR_SEND": "#80ffff",
         "COLOR_ANCHOR_PASS": "#00ff00",
         "COLOR_ANCHOR_FAIL": "#ff0000",
-    }
+    })
 
     def __init__(self, fp):
         super().__init__(fp)

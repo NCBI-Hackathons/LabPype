@@ -71,7 +71,7 @@ class Gadget(UI.Scrolled):
                     groupSizer = self.Groups[group]["PANEL"].GetSizer()
                 else:
                     groupSizer = wx.WrapSizer()
-                    title = UI.Button(self.Inner, size=wx.Size(-1, 20), tag=(group, "L", 20), pic=(pic, "L"), func=(self.OnGroup, group), fg="B")
+                    title = UI.Button(self.Inner, size=wx.Size(-1, 20), tag=(group, "L", 20), pic=(pic, "L"), func=(self.OnGroup, group), fg="B",edge="D")
                     title.SetTip(self.F.SetStatus, group)
                     panel = UI.BaseControl(self.Inner)
                     panel.SetSizer(groupSizer)
