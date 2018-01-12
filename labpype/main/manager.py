@@ -47,9 +47,12 @@ class Manager(object):
         if failed:
             self.F.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_PKG_INITIAL_FAIL", textData=",".join(failed))
         self.F.Gadget.AddItems(self.Groups)
+        for key, value in self._PendingGroup.items():
+            self.F.Gadget.DoToggleGroup(key, value)
 
     # -------------------------------------------------------- #
     def Load(self):
+        self._PendingGroup = {}
         try:
             if not os.path.exists(self.filename):
                 with open(self.filename, "wb") as f:
@@ -59,10 +62,12 @@ class Manager(object):
                 self.Groups = []
             with open(self.filename, "r", encoding="utf-8") as f:
                 for key, value in json.load(f):
-                    if value == "W" and key in self.Widgets:
-                        self.Groups.append(self.Widgets[key])
-                    elif value == "G":
+                    if value == "W":
+                        if key in self.Widgets:
+                            self.Groups.append(self.Widgets[key])
+                    else:
                         self.Groups.append(key)
+                        self._PendingGroup[key] = value
         except Exception:
             pass
 
@@ -70,7 +75,7 @@ class Manager(object):
         out = []
         for i in self.Groups:
             if isinstance(i, str):
-                out.append((i, "G"))
+                out.append((i, self.F.Gadget.Groups[i]["SHOW"]))
             else:
                 out.append((i.__ID__, "W"))
         try:

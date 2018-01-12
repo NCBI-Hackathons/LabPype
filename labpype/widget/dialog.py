@@ -150,7 +150,7 @@ class Dialog(UI.BaseMain):
                 if "hint" in field.kwargs:
                     field.kwargs["hint"] = self.L.Get(field.kwargs["hint"], "WIDGET_DLG_")
                 if issubclass(cls, BooleanField):
-                    tags = self.L.Get(field.tag1, "WIDGET_DLG_"), self.L.Get(field.tag2, "WIDGET_DLG_")
+                    tags = self.L.Get(field.tags[0], "WIDGET_DLG_"), self.L.Get(field.tags[1], "WIDGET_DLG_")
                     self[key] = self.AddButtonToggle(sizer, label, tags=tags, toggle=self.GetDefaultData(key, 0), **field.kwargs)
                     self.AutoGet[key] = self[key].IsToggled
                     self.AutoSet[key] = self[key].SetToggle

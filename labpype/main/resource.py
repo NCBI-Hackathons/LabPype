@@ -13,7 +13,7 @@ class Resource(UI.Resource):
         "FONTFACE_CANVAS"  : "",
         "FONTFACE_MAIN"    : "",
         "FONTFACE_FIXED"   : "",
-        "COLOR_CONNECTION" : "#ddeeff",
+        "COLOR_CONNECTION" : "#ddeeffcc",
         "COLOR_SELECTION"  : "#00c0ff",
         "COLOR_WIDGET_DONE": "#00ff00",
         "COLOR_WIDGET_WAIT": "#ffaa55",

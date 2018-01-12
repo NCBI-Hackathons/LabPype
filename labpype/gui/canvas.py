@@ -194,6 +194,13 @@ class Canvas(UI.BaseControl):
 
     # ----------------------------------------------
     def GetHovered(self, pos):
+        if 0 <= pos[0] < self.hiddenImage.GetWidth() and 0 <= pos[1] < self.hiddenImage.GetHeight():
+            r = self.hiddenImage.GetRed(*pos)
+            g = self.hiddenImage.GetGreen(*pos)
+            b = self.hiddenImage.GetBlue(*pos)
+            l = self.Link.get(r << 16 | g << 8 | b)
+            if l:
+                return l
         if self.S["TOGGLE_ANCR"]:
             for w in reversed(self.Widget):
                 for c in w.Anchors:
@@ -205,11 +212,6 @@ class Canvas(UI.BaseControl):
             for w in reversed(self.Widget):
                 if w.Contains(pos):
                     return w
-        if 0 <= pos[0] < self.hiddenImage.GetWidth() and 0 <= pos[1] < self.hiddenImage.GetHeight():
-            r = self.hiddenImage.GetRed(*pos)
-            g = self.hiddenImage.GetGreen(*pos)
-            b = self.hiddenImage.GetBlue(*pos)
-            return self.Link.get(r << 16 | g << 8 | b)
 
     def OnCaptureLost(self, evt):
         self.Hovered = None

@@ -28,10 +28,9 @@ class BaseField(object):
 
 # ----------------------------------------------
 class BooleanField(BaseField):
-    def __init__(self, key, label, tag1, tag2, **kwargs):
+    def __init__(self, key, label, tags, **kwargs):
         super().__init__(key=key, label=label, **kwargs)
-        self.tag1 = tag1
-        self.tag2 = tag2
+        self.tags = tags
 
     def Validate(self, value):
         return value
