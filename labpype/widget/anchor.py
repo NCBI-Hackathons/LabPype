@@ -2,7 +2,7 @@
 
 import wx
 from .base import Base
-from .link import LegitLink
+from .link import LegitLink, Link
 
 __all__ = ["Anchor"]
 
@@ -174,7 +174,7 @@ class Anchor(Base):
     def RemoveTarget(self, dest, onAlter):  # self always send, dest always recv
         self.connected.remove(dest)
         dest.connected.remove(self)
-        self.Canvas.RemoveLink(self, dest)
+        del self.Canvas.Link[self.Id << 12 | dest.Id]
         if onAlter:
             dest.Widget.OnAlter()
 
@@ -189,7 +189,13 @@ class Anchor(Base):
             self.EmptyTarget(True)
         self.connected.append(dest)
         dest.connected.append(self)
-        self.Canvas.AppendLink(self, dest)
+        rgb = self.Id << 12 | dest.Id
+        r = (rgb >> 16) & 0b11111111
+        g = (rgb >> 8) & 0b11111111
+        b = rgb & 0b11111111
+        pen = wx.Pen(wx.Colour(r, g, b), 11)
+        pen.SetCap(wx.CAP_BUTT)
+        self.Canvas.Link[rgb] = Link(self, dest, pen)
         if onAlter:
             dest.Widget.OnAlter()
 

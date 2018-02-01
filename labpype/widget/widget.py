@@ -186,6 +186,9 @@ class BaseWidget(Base):
         self.nameSize = GetMultiLineTextExtent(self.Canvas, self.name)
         self.PositionName()
 
+    def GetName(self):
+        return self.NAME
+
     def NewPosition(self, x, y):
         if self.Canvas.S["TOGGLE_SNAP"]:
             x = x >> 5 << 5
@@ -240,7 +243,7 @@ class BaseWidget(Base):
                 dc.nameTexts.append("%s %s" % (self.name, self.Thread.status))
             else:
                 dc.nameTexts.append(self.name)
-            dc.namePoints.append(self.namePos)
+            dc.nameXYs.append(self.namePos)
         if self.Canvas.S["TOGGLE_ANCR"]:
             for a in self.Anchors:
                 a.Draw(dc)

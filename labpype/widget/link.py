@@ -73,3 +73,30 @@ class _LegitLink(object):
 
 
 LegitLink = _LegitLink()
+
+
+# ======================================================== Link ========================================================
+class Link(object):
+    __TYPE__ = "LINK"
+
+    def __init__(self, source, target, pen):
+        self.source = source
+        self.target = target
+        self.pen = pen
+
+    def Disconnect(self):
+        self.source.RemoveTarget(self.target, True)
+        self.source = None
+        self.target = None
+        self.pen = None
+
+    def GetXY(self):
+        x1, y1 = self.source.x + 3, self.source.y + 3
+        x2, y2 = self.target.x + 3, self.target.y + 3
+        c = (x1 + x2) / 2
+        c1 = max(c, x1 + 32)
+        c2 = min(c, x2 - 32)
+        return x1, y1, x2, y2, c1, c2
+
+    def GetName(self):
+        return "[%s].[%s] --> [%s].[%s]" % (self.source.Widget.NAME, self.source.name, self.target.Widget.NAME, self.target.name)

@@ -28,6 +28,8 @@ IdPool = _IdPool()
 
 # ======================================================== Base ========================================================
 class Base(object):
+    __TYPE__ = "BASE"
+
     def __init__(self, w, h):
         self.AcquireID()
         self.x = self.lastX = 0

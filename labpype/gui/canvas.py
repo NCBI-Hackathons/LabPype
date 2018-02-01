@@ -4,7 +4,6 @@ import wx
 import threading
 import DynaUI as UI
 from .. import utility as Ut
-from ..widget import BaseWidget, Anchor
 
 MOCK_RECT = wx.Rect(0, 0, 0, 0)
 
@@ -35,6 +34,7 @@ class Canvas(UI.BaseControl):
         self.rightPos = None
         self.SelectionArea = [0, 0]
         self.SelectionRect = MOCK_RECT
+
         self.SelectedWidget = []
         self.SelectedLink = None
         self.TempLink = None
@@ -96,11 +96,9 @@ class Canvas(UI.BaseControl):
     # ----------------------------------------------
     def AddWidget(self, W, pos=(20, 20)):
         if len(self.Widget) > 255:
-            self.F.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_TOO_MANY_WIDGETS")
-            return
+            return self.F.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_TOO_MANY_WIDGETS")
         if W.UNIQUE and W.__INSTANCE__:
-            self.F.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_SINGLETON_EXISTS")
-            return
+            return self.F.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_SINGLETON_EXISTS")
         w = W(self)
         w.SetPosition(*pos)
         self.Widget.append(w)
@@ -113,17 +111,15 @@ class Canvas(UI.BaseControl):
         self.SelectedLink = None
         while self.Widget:
             self.Widget.pop().Destroy()
-        self.Link = {}
         self.ReDraw()
 
     def DeleteSelected(self):
         if not self.SelectedWidget and not self.SelectedLink:
             return
-        self.leftPos = None
         self.Hovered = None
         self.Clicked = None
         if self.SelectedLink:
-            self.SelectedLink[0].RemoveTarget(self.SelectedLink[1], True)
+            self.SelectedLink.Disconnect()
             self.SelectedLink = None
         else:
             while self.SelectedWidget:
@@ -139,19 +135,6 @@ class Canvas(UI.BaseControl):
             self.widgetRunning -= 1
 
     # ----------------------------------------------
-    def AppendLink(self, source, target):
-        rgb = source.Id << 12 | target.Id
-        r = (rgb >> 16) & 0b11111111
-        g = (rgb >> 8) & 0b11111111
-        b = rgb & 0b11111111
-        pen = wx.Pen(wx.Colour(r, g, b), 11)
-        pen.SetCap(wx.CAP_BUTT)
-        self.Link[rgb] = (source, target, pen)
-
-    def RemoveLink(self, source, target):
-        del self.Link[source.Id << 12 | target.Id]
-
-    # ----------------------------------------------
     def SetSelectionArea(self, pos1=-1, pos2=-1):
         if pos1 != -1:
             self.SelectionArea[0] = pos1
@@ -163,10 +146,6 @@ class Canvas(UI.BaseControl):
             self.SelectionRect = wx.Rect(min(x1, x2), min(y1, y2), abs(x1 - x2), abs(y1 - y2))
         else:
             self.SelectionRect = MOCK_RECT
-
-    def ClearSelectionArea(self):
-        self.SelectionArea = [0, 0]
-        self.SelectionRect = MOCK_RECT
 
     def UpdateSelection(self):
         for w in self.Widget:
@@ -185,32 +164,16 @@ class Canvas(UI.BaseControl):
             self.SelectedWidget.append(w)
 
     def SelectAll(self):
+        self.SelectedLink = None
         self.SelectedWidget = self.Widget[::]
         self.ReDraw()
 
     def SelectNone(self):
+        self.SelectedLink = None
         self.SelectedWidget = []
         self.ReDraw()
 
     # ----------------------------------------------
-    def GetHovered(self, pos):
-        if self.S["TOGGLE_ANCR"]:
-            for w in reversed(self.Widget):
-                for c in w.Anchors:
-                    if c.Contains(pos):
-                        return c
-                if w.Contains(pos):
-                    return w
-        else:
-            for w in reversed(self.Widget):
-                if w.Contains(pos):
-                    return w
-        if 0 <= pos[0] < self.hiddenImage.GetWidth() and 0 <= pos[1] < self.hiddenImage.GetHeight():
-            r = self.hiddenImage.GetRed(*pos)
-            g = self.hiddenImage.GetGreen(*pos)
-            b = self.hiddenImage.GetBlue(*pos)
-            return self.Link.get(r << 16 | g << 8 | b)
-
     def OnCaptureLost(self, evt):
         self.Hovered = None
         self.Clicked = None
@@ -250,16 +213,15 @@ class Canvas(UI.BaseControl):
             self.leftPos = evtPos
             self.Clicked = self.Hovered
             if self.Clicked is None:
-                self.SetSelectionArea(evtPos, evtPos)
+                self.SetSelectionArea(evtPos, 0)
                 self.SelectAll() if evtType == wx.wxEVT_LEFT_DCLICK else self.SelectNone()
-            elif self.Clicked and self.Clicked not in self.SelectedWidget:
-                self.SelectNone()
-            if isinstance(self.Clicked, tuple):
-                self.SelectedLink = self.Clicked
             else:
-                self.SelectedLink = None
+                if self.Clicked not in self.SelectedWidget:
+                    self.SelectNone()
+                if self.Clicked.__TYPE__ == "LINK":
+                    self.SelectedLink = self.Clicked
         if self.Clicked:
-            if isinstance(self.Clicked, BaseWidget):
+            if self.Clicked.__TYPE__ == "WIDGET":
                 if evtType == wx.wxEVT_LEFT_DOWN:
                     self.OnSelect(self.Clicked)
                 elif evtType == wx.wxEVT_LEFT_DCLICK:
@@ -270,21 +232,21 @@ class Canvas(UI.BaseControl):
                 elif evtType == wx.wxEVT_MOTION:
                     for w in self.SelectedWidget:
                         w.RePosition(*(evtPos - self.leftPos))
-            elif isinstance(self.Clicked, Anchor):
+            elif self.Clicked.__TYPE__ == "ANCHOR":
                 self.Clicked.HandleMouse(evtType, evtPos)
         elif evtType == wx.wxEVT_MOTION:
-            self.SetSelectionArea(pos2=evtPos)
+            self.SetSelectionArea(-1, evtPos)
             self.UpdateSelection()
         if evtType == wx.wxEVT_LEFT_UP:
             if self.HasCapture(): self.ReleaseMouse()
             self.leftPos = None
-            self.SetSelectionArea(0, 0)
             self.Clicked = None
+            self.SetSelectionArea(0, 0)
             for w in self.SelectedWidget:
                 w.SavePosition()
 
     def HandleMouseMiddle(self, evtType, evtPos):
-        if isinstance(self.Hovered, BaseWidget):
+        if self.Hovered and self.Hovered.__TYPE__ == "WIDGET":
             if evtType == wx.wxEVT_MIDDLE_DOWN:
                 self.OnSelect(self.Hovered)
                 for w in self.Hovered.GetLinkedWidget():
@@ -306,10 +268,10 @@ class Canvas(UI.BaseControl):
 
     def HandleMouseRight(self, evtType, evtPos):
         if evtType == wx.wxEVT_RIGHT_DOWN or evtType == wx.wxEVT_RIGHT_DCLICK:
-            self.SelectedLink = None
-            if isinstance(self.Hovered, BaseWidget):
-                self.OnSelect(self.Hovered, not self.Hovered in self.SelectedWidget)
             self.rightPos = evtPos
+            self.SelectedLink = None
+            if self.Hovered and self.Hovered.__TYPE__ == "WIDGET":
+                self.OnSelect(self.Hovered, not self.Hovered in self.SelectedWidget)
         elif evtType == wx.wxEVT_RIGHT_UP:
             self.rightPos = None
 
@@ -317,23 +279,32 @@ class Canvas(UI.BaseControl):
         newObj = self.GetHovered(evtPos)
         if self.Hovered != newObj:
             self.Hovered = newObj
-            if isinstance(newObj, BaseWidget):
-                self.F.SetStatus(newObj.name)
-            elif isinstance(newObj, Anchor):
+            if hasattr(newObj, "__TYPE__"):
                 self.F.SetStatus(newObj.GetName())
-            elif isinstance(newObj, tuple):
-                self.F.SetStatus("[%s].[%s] --> [%s].[%s]" % (newObj[0].Widget.NAME, newObj[0].name, newObj[1].Widget.NAME, newObj[1].name), 1)
             else:
                 self.F.SetStatus("")
             return True
 
+    def GetHovered(self, pos):
+        if self.S["TOGGLE_ANCR"]:
+            for w in reversed(self.Widget):
+                for c in w.Anchors:
+                    if c.Contains(pos):
+                        return c
+                if w.Contains(pos):
+                    return w
+        else:
+            for w in reversed(self.Widget):
+                if w.Contains(pos):
+                    return w
+        if 0 <= pos[0] < self.hiddenImage.GetWidth() and 0 <= pos[1] < self.hiddenImage.GetHeight():
+            return self.Link.get(self.hiddenImage.GetRed(*pos) << 16 |
+                                 self.hiddenImage.GetGreen(*pos) << 8 |
+                                 self.hiddenImage.GetBlue(*pos))
+
     # ----------------------------------------------
     def DrawLink(self, gc, selected):
-        x1, y1 = (selected[0].x + 3, selected[0].y + 3)
-        x2, y2 = (selected[1].x + 3, selected[1].y + 3)
-        c = (x1 + x2) / 2
-        c1 = max(c, x1 + 32)
-        c2 = min(c, x2 - 32)
+        x1, y1, x2, y2, c1, c2 = selected.GetXY()
         self.DrawLink2(gc, x1, y1, x2, y2, c1, c2, self.R["PEN_CONNECTION_SELECTION1"])
         self.DrawLink2(gc, x1, y1, x2, y2, c1, c2, self.R["PEN_CONNECTION_SELECTION2"])
 
@@ -342,7 +313,7 @@ class Canvas(UI.BaseControl):
         dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         dc.nameTexts = []
-        dc.namePoints = []
+        dc.nameXYs = []
         dc.anchorOutgoing = []
         dc.anchorIdleR = []
         dc.anchorPassR = []
@@ -355,17 +326,19 @@ class Canvas(UI.BaseControl):
         dc.SetPen(self.R["PEN_SELECTION"])
         dc.SetBrush(self.R["BRUSH_SELECTION"])
         dc.DrawRectangle(self.SelectionRect)
-        dc.DrawRectangleList([w.rect for w in self.SelectedWidget])
         if self.SelectedLink:
             self.DrawLink(gc, self.SelectedLink)
+        elif self.SelectedWidget:
+            dc.DrawRectangleList([w.rect for w in self.SelectedWidget])
 
         # Layer 2 - Hover
-        if isinstance(self.Hovered, BaseWidget):
-            dc.DrawRectangle(self.Hovered.rect)
-        elif isinstance(self.Hovered, Anchor):
-            dc.DrawRectangle(self.Hovered.rect)
-        elif isinstance(self.Hovered, tuple) and self.Hovered != self.SelectedLink:
-            self.DrawLink(gc, self.Hovered)
+        if self.Hovered:
+            if self.Hovered.__TYPE__ == "WIDGET":
+                dc.DrawRectangle(self.Hovered.rect)
+            elif self.Hovered.__TYPE__ == "ANCHOR":
+                dc.DrawRectangle(self.Hovered.rect)
+            elif self.Hovered.__TYPE__ == "LINK" and self.Hovered != self.SelectedLink:
+                self.DrawLink(gc, self.Hovered)
 
         # Layer 3 - Widget
         dc.SetPen(wx.TRANSPARENT_PEN)
@@ -375,12 +348,7 @@ class Canvas(UI.BaseControl):
         # Layer 4 - Linkage
         path = gc.CreatePath()
         for link in self.Link.values():
-            x1, y1 = link[0].x + 3, link[0].y + 3
-            x2, y2 = link[1].x + 3, link[1].y + 3
-            c = (x1 + x2) / 2
-            c1 = max(c, x1 + 32)
-            c2 = min(c, x2 - 32)
-            self.DrawLink1(path, x1, y1, x2, y2, c1, c2)
+            self.DrawLink1(path, *link.GetXY())
         if self.TempLink and self.TempLink[1]:
             if self.TempLink[3]:
                 x1, y1 = self.TempLink[0]
@@ -410,7 +378,7 @@ class Canvas(UI.BaseControl):
         dc.DrawRectangleList(dc.anchorFailR)
         dc.DrawEllipseList(dc.anchorFailE)
 
-        dc.DrawTextList(dc.nameTexts, dc.namePoints)
+        dc.DrawTextList(dc.nameTexts, dc.nameXYs)
 
         # Layer 6 - Border
         dc.SetPen(self.R["PEN_EDGE_B"])
@@ -427,6 +395,7 @@ class Canvas(UI.BaseControl):
         self.hiddenImage = self.hiddenBitmap.ConvertToImage()
 
     def ReDrawHidden(self):
+        self.StopTimer("_HIDDEN_REDRAW_")
         self.StopTimer("_HIDDEN_FORCE_DRAW_")
         mdc = wx.MemoryDC()
         mdc.SelectObject(self.hiddenBitmap)
@@ -435,12 +404,7 @@ class Canvas(UI.BaseControl):
         mgc = wx.GraphicsContext.Create(mdc)
         mgc.SetAntialiasMode(wx.ANTIALIAS_NONE)
         for link in self.Link.values():
-            x1, y1 = link[0].x + 3, link[0].y + 3
-            x2, y2 = link[1].x + 3, link[1].y + 3
-            c = (x1 + x2) / 2
-            c1 = max(c, x1 + 32)
-            c2 = min(c, x2 - 32)
-            self.DrawLink2(mgc, x1, y1, x2, y2, c1, c2, link[2])
+            self.DrawLink2(mgc, *link.GetXY(), link.pen)
         mdc.SelectObject(wx.NullBitmap)
         self.hiddenImage = self.hiddenBitmap.ConvertToImage()
 
