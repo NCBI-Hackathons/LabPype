@@ -245,7 +245,6 @@ class Dialog(UI.BaseMain):
             self.Frame.Main = self
             self.Frame.GetSizer().Insert(1, self, 1, wx.EXPAND | wx.ALL ^ wx.BOTTOM, 4)
             self.Frame.Layout()
-            # self.Frame.Refresh()
             self.Frame.Show()
             self.Frame.SetFocus()
             for i in self.Harbor.Inner.GetChildren():
@@ -287,18 +286,16 @@ class Dialog(UI.BaseMain):
             self.OnClose()
 
     def OnApply(self):  # Key = 2
-        if self.AUTO:
-            self.AutoSetData()
-        self.SetData()
-        self.Widget.OnAlter()
-        self.Widget.Canvas.ReDraw()
-
-    def OnBegin(self):  # Key = 3
+        self.Widget.OnAlterInternal()
         ok = self.AutoSetData() if self.AUTO else True
         self.SetData()
-        self.Widget.OnBegin()
         self.Widget.Canvas.ReDraw()
         return ok
+
+    def OnBegin(self):  # Key = 3
+        if self.OnApply():
+            self.Widget.OnBegin()
+            return True
 
     def OnAbort(self):  # Key = 4
         self.Widget.OnAbort()

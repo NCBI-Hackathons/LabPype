@@ -119,7 +119,7 @@ class BaseWidget(Base):
         if self.__class__.UNIQUE:
             self.__class__.__INSTANCE__ = self
             for w in self.__RECEIVER__:
-                w.OnAlter()
+                w.OnAlterIncoming()
         else:
             self.__class__.__INSTANCE__.append(self)
         self.state = self.__STATES__[0]
@@ -142,7 +142,7 @@ class BaseWidget(Base):
         if self.__class__.UNIQUE:
             self.__class__.__INSTANCE__ = None
             for w in self.__RECEIVER__:
-                w.OnAlter()
+                w.OnAlterIncoming()
         else:
             self.__class__.__INSTANCE__.remove(self)
         for a in reversed(self.Anchors):
@@ -301,11 +301,6 @@ class BaseWidget(Base):
         return True
 
     # -------------------------------------------------------- #
-    def UpdateData(self):
-        self.UpdateIncoming()
-        self.UpdateOutgoing()
-        self.UpdateDialog()
-
     def UpdateIncoming(self):
         for a in self.Incoming:
             self[a.key] = a.Retrieve()
@@ -356,16 +351,16 @@ class BaseWidget(Base):
         self.Data.update(self.Load(f))
 
     # -------------------------------------------------------- #
+    def OnAlterInternal(self):
+        raise NotImplementedError
+
+    def OnAlterIncoming(self):
+        raise NotImplementedError
+
     def OnBegin(self):
         raise NotImplementedError
 
     def OnAbort(self):
-        raise NotImplementedError
-
-    def OnPause(self):
-        raise NotImplementedError
-
-    def OnAlter(self):
         raise NotImplementedError
 
     def OnShowDialog(self):
@@ -398,9 +393,18 @@ class Widget(BaseWidget):
     __STATES__ = "Idle", "Fail", "Done", "Wait", "Work"
 
     @Synced
+    def OnAlterInternal(self):
+        self.OnAbort()
+
+    @Synced
+    def OnAlterIncoming(self):
+        self.OnAbort()
+        self.UpdateIncoming()
+        self.UpdateDialog()
+
+    @Synced
     def OnBegin(self):
-        self.OnAlter()
-        if not (self.IsIncomingAvailable() and self.IsInternalAvailable()):
+        if not self.IsIncomingAvailable() or not self.IsInternalAvailable():
             return self.SetState("Fail")
         fail = False
         wait = False
@@ -420,20 +424,12 @@ class Widget(BaseWidget):
 
     @Synced
     def OnAbort(self):
-        self.OnAlter()
-
-    @Synced
-    def OnPause(self):
-        pass
-
-    @Synced
-    def OnAlter(self):
         if not self.IsState("Idle"):
             self.SetState("Idle")
-        self.StopThread()
-        self.UpdateData()
-        for w in self.GetOutgoingWidget():
-            w.OnAlter()
+            self.StopThread()
+            self.UpdateOutgoing()
+            for w in self.GetOutgoingWidget():
+                w.OnAlterIncoming()
 
     def OnShowDialog(self):
         if self.THREAD:
@@ -473,7 +469,7 @@ class Widget(BaseWidget):
             self.Thread = Thread(target=self.RunInThread)
             self.Thread.start()
         else:
-            self.RunDirectly()
+            wx.CallAfter(self.RunDirectly)
 
     def GetThread(self):
         return threading.currentThread()
@@ -508,16 +504,19 @@ class Widget(BaseWidget):
 
     def RunDirectly(self):
         try:
-            self["OUT"] = self.Task()
-            if self["OUT"] is None:
-                self.SetState("Fail")
-                self.LogErr(self.Canvas.L["WIDGET_FAIL"])
-            else:
-                self.SetState("Done")
-                self.LogOut(self.Canvas.L["WIDGET_DONE"])
+            out = self.Task()
+            if self.IsState("Work"):
+                self["OUT"] = out
+                if out is None:
+                    self.SetState("Fail")
+                    self.LogErr(self.Canvas.L["WIDGET_FAIL"])
+                else:
+                    self.SetState("Done")
+                    self.LogOut(self.Canvas.L["WIDGET_DONE"])
         except Exception as e:
-            self.SetState("Fail")
-            self.LogErr(str(e))
+            if self.IsState("Work"):
+                self.SetState("Fail")
+                self.LogErr(str(e))
 
     # -------------------------------------------------------- #
     def OnLeaveIdle(self):
@@ -560,6 +559,7 @@ class Widget(BaseWidget):
         self.Bitmap = self.__RES__["CANVAS"]["DONE"]
         self.UpdateDialog()
         for w in self.GetOutgoingWidget():
+            w.UpdateDialog()
             if w.IsState("Idle"):
                 w.UpdateIncoming()
             elif w.IsState("Fail"):

@@ -228,6 +228,7 @@ class Canvas(UI.BaseControl):
                     if self.Clicked.DIALOG and not evtShift:
                         self.Clicked.OnActivation()
                     else:
+                        self.Clicked.OnAbort()
                         self.Clicked.OnBegin()
                 elif evtType == wx.wxEVT_MOTION:
                     for w in self.SelectedWidget:
