@@ -4,6 +4,7 @@ import io
 import wx
 import math
 import json
+import uuid
 import threading
 from DynaUI import GetMultiLineTextExtent, DoNothing
 from ..utility import Thread, Interrupted
@@ -88,6 +89,7 @@ class BaseWidget(Base):
 
     def __init__(self, canvas):
         super().__init__(w=70, h=70)
+        self.UUID = str(uuid.uuid1())
         self.Canvas = canvas
         onEnter = {state: getattr(self, "OnEnter%s" % state, DoNothing) for state in self.__STATES__}
         onLeave = {state: getattr(self, "OnLeave%s" % state, DoNothing) for state in self.__STATES__}
@@ -261,7 +263,7 @@ class BaseWidget(Base):
                 for dest in a.connected:
                     yield dest.Widget
         else:
-            for dest in self.Key2Anchor[key]:
+            for dest in self.Key2Anchor[key].connected:
                 yield dest.Widget
 
     def GetOutgoingWidget(self):
@@ -371,6 +373,12 @@ class BaseWidget(Base):
 
     def LoadState(self, state):
         raise NotImplementedError
+
+    def SaveMeta(self):
+        return {}
+
+    def LoadMeta(self, meta):
+        pass
 
     def Save(self, data):
         return json.dumps(data)

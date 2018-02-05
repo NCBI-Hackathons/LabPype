@@ -213,27 +213,29 @@ class MainFrame(wx.Frame):
         self.T["LAST_FILE"] = ""
 
     def GetScheme(self):
-        return {w.Id: (w.__ID__,
-                       w.GetPosition(),
+        return {w.Id: (w.__ID__, w.UUID, w.GetPosition(), w.SaveState(),
                        [a.Id for a in w.Anchors],
-                       [i.Id for i in w.Outgoing[0].connected] if w.Outgoing else [],
-                       w.SaveState())
+                       [[i.Id for i in a.connected] for a in w.Incoming],
+                       w.SaveMeta())
                 for w in self.Canvas.Widget}
 
-    def SetScheme(self, data, setState):
-        widget = {}
-        anchor = {}
+    def SetScheme(self, data, schemeOnly):
+        widgets = {}
+        anchors = {}
         for wId in data:
-            widget[wId] = self.Canvas.AddWidget(self.M.Widgets[data[wId][0]], data[wId][1])
-            for index, aId in enumerate(data[wId][2]):
-                anchor[aId] = widget[wId].Anchors[index]
+            widgets[wId] = self.Canvas.AddWidget(self.M.Widgets[data[wId][0]], data[wId][2])
+            for aId, anchor in zip(data[wId][4], widgets[wId].Anchors):
+                anchors[aId] = anchor
         for wId in data:
-            for tId in data[wId][3]:
-                widget[wId].Outgoing[0].SetTarget(anchor[tId], False)
-        if setState:
+            for connected, anchor in zip(data[wId][5], widgets[wId].Incoming):
+                for aId in connected:
+                    anchors[aId].SetTarget(anchor, False)
+        if not schemeOnly:
             for wId in data:
-                widget[wId].LoadState(data[wId][4])
-        return widget
+                widgets[wId].UUID = data[wId][1]
+                widgets[wId].LoadState(data[wId][3])
+                widgets[wId].LoadMeta(data[wId][6])
+        return widgets
 
     def OnSave(self, fp):
         schemeOnly = fp.lower().endswith(".pas")
@@ -271,16 +273,16 @@ class MainFrame(wx.Frame):
                         return False
                 if not append:
                     self.OnClear()
-                widget = self.SetScheme(data, setState=not schemeOnly)
+                widgets = self.SetScheme(data, schemeOnly=schemeOnly)
                 if not schemeOnly:
                     for wId in z.namelist():
                         if wId != "_":
                             with z.open(wId) as f:
-                                widget[wId].LoadData(f)  # b -> widget.LoadData
-                for wId in widget:
-                    widget[wId].UpdateIncoming()
-                    widget[wId].PositionAnchor()
-                    widget[wId].SetName()
+                                widgets[wId].LoadData(f)  # b -> widget.LoadData
+                for wId in widgets:
+                    widgets[wId].UpdateIncoming()
+                    widgets[wId].PositionAnchor()
+                    widgets[wId].SetName()
             self.NewHistory(fp)
             return True
         except Exception:
