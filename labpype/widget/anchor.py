@@ -166,7 +166,7 @@ class Anchor(Base):
             for dest in self.connected.copy():
                 dest.RemoveTarget(self, False)
             if onAlter:
-                self.Widget.OnAlterIncoming()
+                self.Widget.OnLoseIncoming(self)
         else:
             for dest in self.connected.copy():
                 self.RemoveTarget(dest, onAlter)
@@ -176,7 +176,7 @@ class Anchor(Base):
         dest.connected.remove(self)
         del self.Canvas.Link[self.Id << 12 | dest.Id]
         if onAlter:
-            dest.Widget.OnAlterIncoming()
+            dest.Widget.OnLoseIncoming(dest, self)
 
     def SetTarget(self, dest, onAlter=True):  # self always send, dest always recv
         if DetectCircularReference(dest.Widget, self.Widget):  # Check the opposite send
@@ -197,7 +197,7 @@ class Anchor(Base):
         pen.SetCap(wx.CAP_BUTT)
         self.Canvas.Link[rgb] = Link(self, dest, pen)
         if onAlter:
-            dest.Widget.OnAlterIncoming()
+            dest.Widget.OnAlterIncoming(dest.key)
 
     def Retrieve(self):
         if self.connected:

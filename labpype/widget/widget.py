@@ -73,15 +73,18 @@ class BaseWidget(Base):
                 cls.INCOMING = ()
             elif not isinstance(cls.INCOMING[0], (tuple, list)):
                 cls.INCOMING = (cls.INCOMING,)
-            if cls.PROVIDER is None:
-                cls.PROVIDER = ()
-            elif not isinstance(cls.PROVIDER[0], (tuple, list)):
-                cls.PROVIDER = (cls.PROVIDER,)
             if cls.OUTGOING is None:
                 pass
             elif not isinstance(cls.OUTGOING, (tuple, list)):
                 cls.OUTGOING = (cls.OUTGOING, "Output", None)
-            for kls, key in cls.PROVIDER:
+            if cls.PROVIDER is None:
+                cls.PROVIDER = {}
+            elif isinstance(cls.PROVIDER, (tuple, list)):
+                if isinstance(cls.PROVIDER[0], (tuple, list)):
+                    cls.PROVIDER = dict(cls.PROVIDER)
+                else:
+                    cls.PROVIDER = {cls.PROVIDER[0]: cls.PROVIDER[1]}
+            for kls, key in cls.PROVIDER.items():
                 if kls.__RECEIVER__ is None:
                     kls.__RECEIVER__ = []
             cls.__INITIALIZED__ = True
@@ -112,7 +115,7 @@ class BaseWidget(Base):
             self.Data[field.key if isinstance(field, BaseField) else field] = None
         for args in self.INCOMING:
             self.AddAnchor(False, *args)
-        for cls, key in self.PROVIDER:
+        for cls, key in self.PROVIDER.items():
             cls.__RECEIVER__.append(self)
             self.Data[key] = cls.__INSTANCE__ and cls.__INSTANCE__["OUT"]
         if self.OUTGOING:
@@ -121,7 +124,7 @@ class BaseWidget(Base):
         if self.__class__.UNIQUE:
             self.__class__.__INSTANCE__ = self
             for w in self.__RECEIVER__:
-                w.OnAlterIncoming()
+                w.OnAlterIncoming(w.PROVIDER[self.__class__])
         else:
             self.__class__.__INSTANCE__.append(self)
         self.state = self.__STATES__[0]
@@ -139,12 +142,12 @@ class BaseWidget(Base):
             self.Dialog.GetData = DoNothing
             self.Dialog.OnClose()
         self.StopThread()
-        for cls, key in self.PROVIDER:
+        for cls, key in self.PROVIDER.items():
             cls.__RECEIVER__.remove(self)
         if self.__class__.UNIQUE:
             self.__class__.__INSTANCE__ = None
             for w in self.__RECEIVER__:
-                w.OnAlterIncoming()
+                w.OnAlterIncoming(w.PROVIDER[self.__class__])
         else:
             self.__class__.__INSTANCE__.remove(self)
         for a in reversed(self.Anchors):
@@ -269,17 +272,17 @@ class BaseWidget(Base):
     def GetOutgoingWidget(self):
         for a in self.Outgoing:
             for dest in a.connected:
-                yield dest.Widget
+                yield dest.Widget, dest.key
         if self.UNIQUE:
             for w in self.__RECEIVER__:
-                yield w
+                yield w, w.PROVIDER[self.__class__]
 
     def GetIncomingWidget(self):
         for a in self.Incoming:
             for dest in a.connected:
-                yield dest.Widget
-        for cls, key in self.PROVIDER:
-            yield cls.__INSTANCE__
+                yield dest.Widget, a.key
+        for cls, key in self.PROVIDER.items():
+            yield cls.__INSTANCE__, key
 
     def IsOutgoingAvailable(self):
         for a in self.Outgoing:
@@ -291,7 +294,7 @@ class BaseWidget(Base):
         for a in self.Incoming:
             if not a.connected:
                 return False
-        for cls, key in self.PROVIDER:
+        for cls, key in self.PROVIDER.items():
             if cls.__INSTANCE__ is None:
                 return False
         return True
@@ -303,11 +306,20 @@ class BaseWidget(Base):
         return True
 
     # -------------------------------------------------------- #
-    def UpdateIncoming(self):
-        for a in self.Incoming:
-            self[a.key] = a.Retrieve()
-        for cls, key in self.PROVIDER:
-            self[key] = cls.__INSTANCE__ and cls.__INSTANCE__["OUT"]
+    def UpdateIncoming(self, key=None):
+        if key is None:
+            for a in self.Incoming:
+                self[a.key] = a.Retrieve()
+            for cls, k in self.PROVIDER.items():
+                self[k] = cls.__INSTANCE__ and cls.__INSTANCE__["OUT"]
+        else:
+            if key in self.Key2Anchor:
+                self[key] = self.Key2Anchor[key].Retrieve()
+            else:
+                for cls, k in self.PROVIDER.items():
+                    if key == k:
+                        self[key] = cls.__INSTANCE__ and cls.__INSTANCE__["OUT"]
+                        break
 
     def UpdateOutgoing(self):
         self["OUT"] = None
@@ -356,7 +368,10 @@ class BaseWidget(Base):
     def OnAlterInternal(self):
         raise NotImplementedError
 
-    def OnAlterIncoming(self):
+    def OnAlterIncoming(self, key):
+        raise NotImplementedError
+
+    def OnLoseIncoming(self, a, w=None):
         raise NotImplementedError
 
     def OnBegin(self):
@@ -405,9 +420,15 @@ class Widget(BaseWidget):
         self.OnAbort()
 
     @Synced
-    def OnAlterIncoming(self):
+    def OnAlterIncoming(self, key):
         self.OnAbort()
-        self.UpdateIncoming()
+        self.UpdateIncoming(key)
+        self.UpdateDialog()
+
+    @Synced
+    def OnLoseIncoming(self, a, w=None):
+        self.OnAbort()
+        self.UpdateIncoming(a.key)
         self.UpdateDialog()
 
     @Synced
@@ -416,7 +437,7 @@ class Widget(BaseWidget):
             return self.SetState("Fail")
         fail = False
         wait = False
-        for w in self.GetIncomingWidget():
+        for w, _ in self.GetIncomingWidget():
             if w.IsState("Idle"):
                 w.OnBegin()
             if w.IsState("Fail"):
@@ -436,8 +457,8 @@ class Widget(BaseWidget):
             self.SetState("Idle")
             self.StopThread()
             self.UpdateOutgoing()
-            for w in self.GetOutgoingWidget():
-                w.OnAlterIncoming()
+            for w, _ in self.GetOutgoingWidget():
+                w.OnAbort()
 
     def OnShowDialog(self):
         if self.THREAD:
@@ -556,7 +577,7 @@ class Widget(BaseWidget):
     def OnEnterFail(self):
         self.Bitmap = self.__RES__["CANVAS"]["FAIL"]
         self.UpdateDialog()
-        for w in self.GetOutgoingWidget():
+        for w, _ in self.GetOutgoingWidget():
             if w.IsState("Wait"):
                 w.SetState("Fail")
 
@@ -566,15 +587,15 @@ class Widget(BaseWidget):
     def OnEnterDone(self):
         self.Bitmap = self.__RES__["CANVAS"]["DONE"]
         self.UpdateDialog()
-        for w in self.GetOutgoingWidget():
+        for w, key in self.GetOutgoingWidget():
             w.UpdateDialog()
             if w.IsState("Idle"):
-                w.UpdateIncoming()
+                w.UpdateIncoming(key)
             elif w.IsState("Fail"):
-                w.UpdateIncoming()
+                w.UpdateIncoming(key)
             elif w.IsState("Wait"):
-                w.UpdateIncoming()
-                for v in w.GetIncomingWidget():
+                w.UpdateIncoming(key)
+                for v, _ in w.GetIncomingWidget():
                     if not v.IsState("Done"):
                         break
                 else:
