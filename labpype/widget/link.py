@@ -77,6 +77,7 @@ LegitLink = _LegitLink()
 
 # ======================================================== Link ========================================================
 class Link(object):
+    __slots__ = ["source", "target", "pen"]
     __TYPE__ = "LINK"
 
     def __init__(self, source, target, pen):
@@ -85,10 +86,7 @@ class Link(object):
         self.pen = pen
 
     def Disconnect(self):
-        self.source.RemoveTarget(self.target, True)
-        self.source = None
-        self.target = None
-        self.pen = None
+        self.source.RemoveTarget(self.target)
 
     def GetXY(self):
         x1, y1 = self.source.x + 3, self.source.y + 3

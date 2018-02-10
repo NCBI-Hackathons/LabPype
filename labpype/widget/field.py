@@ -22,6 +22,9 @@ class BaseField(object):
         self.label = label
         self.kwargs = kwargs
 
+    def __str__(self):
+        return self.key
+
     def Validate(self, value):
         raise NotImplementedError
 

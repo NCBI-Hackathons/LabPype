@@ -286,7 +286,7 @@ class Dialog(UI.BaseMain):
             self.OnClose()
 
     def OnApply(self):  # Key = 2
-        self.Widget.OnAlterInternal()
+        self.Widget.OnChangeInternal()
         ok = self.AutoSetData() if self.AUTO else True
         self.SetData()
         self.Widget.Canvas.ReDraw()

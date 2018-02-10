@@ -6,20 +6,27 @@ from .link import LegitLink, Link
 
 __all__ = ["Anchor"]
 
-# ======================================================= Anchor =======================================================
-#   aType     -  Anchor type, for defining legit links
-#   key       -  Key for accessing (get/set) data associated with this widget
-#   multiple  -  Whether this anchor supports multiple connections
-#   send      -  Whether this anchor retrieve (IN) or send (OUT) associated data from/to its target
-#   pos       -  The relative position of the anchor to the widget, support multiple positions
-#   name      -  Default text displayed when being hovered
-#
-#   GetType   -  By default return aType. Override for flexibility
-#   GetName   -  How canvas display the name of this anchor
-# ======================================================= Anchor =======================================================
+# ==================================================== Anchor Misc =====================================================
 ANCHOR_STATE_IDLE = 1 << 0
 ANCHOR_STATE_PASS = 1 << 1
 ANCHOR_STATE_FAIL = 1 << 2
+
+POS_TABLE = {
+    1 : {-3: 'B', -2: 'B', -1: 'B', 0: 'B', 1: 'B', 2: 'B', 3: 'B', 4: 'B'},
+    2 : {-3: 'R', -2: 'R', -1: 'R', 0: 'R', 1: 'R', 2: 'R', 3: 'R', 4: 'R'},
+    3 : {-3: 'B', -2: 'R', -1: 'R', 0: 'R', 1: 'R', 2: 'B', 3: 'B', 4: 'B'},
+    4 : {-3: 'T', -2: 'T', -1: 'T', 0: 'T', 1: 'T', 2: 'T', 3: 'T', 4: 'T'},
+    5 : {-3: 'T', -2: 'T', -1: 'T', 0: 'T', 1: 'B', 2: 'B', 3: 'B', 4: 'B'},
+    6 : {-3: 'T', -2: 'T', -1: 'T', 0: 'R', 1: 'R', 2: 'R', 3: 'R', 4: 'T'},
+    7 : {-3: 'T', -2: 'T', -1: 'T', 0: 'R', 1: 'R', 2: 'B', 3: 'B', 4: 'B'},
+    8 : {-3: 'L', -2: 'L', -1: 'L', 0: 'L', 1: 'L', 2: 'L', 3: 'L', 4: 'L'},
+    9 : {-3: 'L', -2: 'L', -1: 'L', 0: 'B', 1: 'B', 2: 'B', 3: 'B', 4: 'L'},
+    10: {-3: 'L', -2: 'L', -1: 'R', 0: 'R', 1: 'R', 2: 'R', 3: 'L', 4: 'L'},
+    11: {-3: 'L', -2: 'L', -1: 'R', 0: 'R', 1: 'R', 2: 'B', 3: 'B', 4: 'L'},
+    12: {-3: 'L', -2: 'T', -1: 'T', 0: 'T', 1: 'T', 2: 'L', 3: 'L', 4: 'L'},
+    13: {-3: 'L', -2: 'T', -1: 'T', 0: 'T', 1: 'B', 2: 'B', 3: 'B', 4: 'L'},
+    14: {-3: 'L', -2: 'T', -1: 'T', 0: 'R', 1: 'R', 2: 'R', 3: 'L', 4: 'L'},
+    15: {-3: 'L', -2: 'T', -1: 'T', 0: 'R', 1: 'R', 2: 'B', 3: 'B', 4: 'L'}}
 
 
 def DetectCircularReference(Incoming, Outgoing, visited=None):
@@ -32,34 +39,7 @@ def DetectCircularReference(Incoming, Outgoing, visited=None):
                     return True
 
 
-NEAREST_POS = {
-    -3: (-3, -2, +3, +0),
-    -2: (-2, -3, +0, +3),
-    -1: (-1, +0, -3, +2),
-    +0: (+0, -1, +2, -3),
-    +1: (+1, +2, -1, +4),
-    +2: (+2, +1, +4, -1),
-    +3: (+3, +4, +1, -2),
-    +4: (+4, +3, -2, +1), }
-POS_MAP = {
-    -3: "L", -2: "T", -1: "T", +0: "R",
-    +1: "R", +2: "B", +3: "B", +4: "L", }
-POS_TABLE = {}
-for binPos in range(1, 16):
-    POS_TABLE[binPos] = {}
-    allowed = set()
-    if 0b1000 & binPos:  # L
-        allowed.update((-3, +4))
-    if 0b0100 & binPos:  # T
-        allowed.update((-2, -1))
-    if 0b0010 & binPos:  # R
-        allowed.update((+0, +1))
-    if 0b0001 & binPos:  # B
-        allowed.update((+2, +3))
-    for index in NEAREST_POS:
-        POS_TABLE[binPos][index] = POS_MAP[[i for i in NEAREST_POS[index] if i in allowed][0]]
-
-
+# ======================================================= Anchor =======================================================
 class Anchor(Base):
     __TYPE__ = "ANCHOR"
 
@@ -72,52 +52,64 @@ class Anchor(Base):
         self.multiple = multiple
         self.send = send
         self.name = name
-
-        self.posAllowed = pos
-        self.posTable = POS_TABLE[(0b1000 if "L" in pos else 0) | (0b0100 if "T" in pos else 0) | (0b0010 if "R" in pos else 0) | (0b0001 if "B" in pos else 0)]
-        self.pos = pos[0]
-
+        self.pos =self.posDefault = pos[0]
+        # self.posDefault = pos
+        self.posTable = POS_TABLE[(0b1000 if "L" in pos else 0) |
+                                  (0b0100 if "T" in pos else 0) |
+                                  (0b0010 if "R" in pos else 0) |
+                                  (0b0001 if "B" in pos else 0)]
         self.single = not multiple
         self.recv = not send
         self.rect.SetSize((18, 18))
-        self.connected = []
+        self.area = (0, 0, 6, 6)
         self.pointing = None
         self.leftPos = None
-        self.state = ANCHOR_STATE_IDLE
-        self.Draw = (self.DrawRectangle if self.multiple else self.DrawEllipse) if self.recv else self.DrawOutgoing
+        if self.send:
+            self.DrawFunctions = {ANCHOR_STATE_IDLE: self.DrawOutgoing,
+                                  ANCHOR_STATE_PASS: self.DrawPassR,
+                                  ANCHOR_STATE_FAIL: self.DrawFailR}
+        elif self.multiple:
+            self.DrawFunctions = {ANCHOR_STATE_IDLE: self.DrawIdleR,
+                                  ANCHOR_STATE_PASS: self.DrawPassR,
+                                  ANCHOR_STATE_FAIL: self.DrawFailR}
+        else:
+            self.DrawFunctions = {ANCHOR_STATE_IDLE: self.DrawIdleE,
+                                  ANCHOR_STATE_PASS: self.DrawPassE,
+                                  ANCHOR_STATE_FAIL: self.DrawFailE}
+        self.SetState(ANCHOR_STATE_IDLE)
+        self.connected = []
 
     def SetState(self, state):
         self.state = state
+        self.Draw = self.DrawFunctions[state]
 
     def NewPosition(self, x, y):
         self.x = x
         self.y = y
         self.rect.SetPosition((x - 6, y - 6))
+        self.area = (self.x, self.y, 6, 6)
 
     # ----------------------------------------------------------
     def DrawOutgoing(self, dc):
-        if self.state == ANCHOR_STATE_IDLE:
-            dc.anchorOutgoing.append((self.x, self.y, 6, 6))
-        elif self.state == ANCHOR_STATE_PASS:
-            dc.anchorPassR.append((self.x, self.y, 6, 6))
-        elif self.state == ANCHOR_STATE_FAIL:
-            dc.anchorFailR.append((self.x, self.y, 6, 6))
+        dc.anchorOutgoing.append(self.area)
 
-    def DrawRectangle(self, dc):
-        if self.state == ANCHOR_STATE_IDLE:
-            dc.anchorIdleR.append((self.x, self.y, 6, 6))
-        elif self.state == ANCHOR_STATE_PASS:
-            dc.anchorPassR.append((self.x, self.y, 6, 6))
-        elif self.state == ANCHOR_STATE_FAIL:
-            dc.anchorFailR.append((self.x, self.y, 6, 6))
+    def DrawIdleR(self, dc):
+        dc.anchorIdleR.append(self.area)
 
-    def DrawEllipse(self, dc):
-        if self.state == ANCHOR_STATE_IDLE:
-            dc.anchorIdleE.append((self.x, self.y, 6, 6))
-        elif self.state == ANCHOR_STATE_PASS:
-            dc.anchorPassE.append((self.x, self.y, 6, 6))
-        elif self.state == ANCHOR_STATE_FAIL:
-            dc.anchorFailE.append((self.x, self.y, 6, 6))
+    def DrawPassR(self, dc):
+        dc.anchorPassR.append(self.area)
+
+    def DrawFailR(self, dc):
+        dc.anchorFailR.append(self.area)
+
+    def DrawIdleE(self, dc):
+        dc.anchorIdleE.append(self.area)
+
+    def DrawPassE(self, dc):
+        dc.anchorPassE.append(self.area)
+
+    def DrawFailE(self, dc):
+        dc.anchorFailE.append(self.area)
 
     # ----------------------------------------------------------
     def HandleMouse(self, evtType, evtPos):
@@ -161,45 +153,41 @@ class Anchor(Base):
             self.Canvas.TempLink[2] = (self.leftPos[0] - 0.5, self.leftPos[1] - 0.5)
 
     # ----------------------------------------------------------
-    def EmptyTarget(self, onAlter):
-        if self.recv:
-            for dest in self.connected.copy():
-                dest.RemoveTarget(self, False)
-            if onAlter:
-                self.Widget.OnLoseIncoming(self)
-        else:
-            for dest in self.connected.copy():
-                self.RemoveTarget(dest, onAlter)
+    def EmptyTarget(self):
+        for dest in self.connected.copy():
+            self.RemoveTarget(dest)
 
-    def RemoveTarget(self, dest, onAlter):  # self always send, dest always recv
+    def RemoveTarget(self, dest):
         self.connected.remove(dest)
         dest.connected.remove(self)
-        del self.Canvas.Link[self.Id << 12 | dest.Id]
-        if onAlter:
-            dest.Widget.OnLoseIncoming(dest, self)
+        if self.send:
+            del self.Canvas.Link[self.Id << 12 | dest.Id]
+            dest.Widget.OnRemoveIncoming(dest, self.Widget)
+            self.Widget.OnRemoveOutgoing(self, dest.Widget)
+        else:
+            del self.Canvas.Link[self.Id | dest.Id << 12]
+            self.Widget.OnRemoveIncoming(self, dest.Widget)
+            dest.Widget.OnRemoveOutgoing(dest, self.Widget)
 
-    def SetTarget(self, dest, onAlter=True):  # self always send, dest always recv
+    def SetTarget(self, dest, evt=True):  # self always send, dest always recv
         if DetectCircularReference(dest.Widget, self.Widget):  # Check the opposite send
             return self.Canvas.F.SetStatus(self.Canvas.L["MSG_CIRCULAR_LINKAGE"], 1, 5)
         if dest in self.connected:
-            return self.RemoveTarget(dest, True)
+            return self.RemoveTarget(dest)
         if dest.single and dest.connected:
-            dest.EmptyTarget(False)
+            dest.EmptyTarget()
         if self.single and self.connected:
-            self.EmptyTarget(True)
+            self.EmptyTarget()
         self.connected.append(dest)
         dest.connected.append(self)
+        if evt:
+            self.Widget.OnAcceptOutgoing(self, dest.Widget)
+            dest.Widget.OnAcceptIncoming(dest, self.Widget)
         rgb = self.Id << 12 | dest.Id
-        r = (rgb >> 16) & 0b11111111
-        g = (rgb >> 8) & 0b11111111
-        b = rgb & 0b11111111
-        pen = wx.Pen(wx.Colour(r, g, b), 11)
-        pen.SetCap(wx.CAP_BUTT)
+        pen = wx.Pen(wx.Colour((rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255), 11)
         self.Canvas.Link[rgb] = Link(self, dest, pen)
-        if onAlter:
-            dest.Widget.OnAlterIncoming(dest.key)
 
-    def Retrieve(self):
+    def Retrieve(self):  # self always recv
         if self.connected:
             data = []
             for dest in self.connected:
