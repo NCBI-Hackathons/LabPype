@@ -249,8 +249,8 @@ class MainFrame(wx.Frame):
                     f.create_system = 0
             self.NewHistory(fp)
             return True
-        except Exception:
-            self.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_SAVE_FILE_FAILED")
+        except Exception as e:
+            self.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_SAVE_FILE_FAILED", textData=str(e))
             return False
 
     def OnLoad(self, fp, append, schemeOnly):
@@ -285,8 +285,8 @@ class MainFrame(wx.Frame):
                     widgets[wId].SetName()
             self.NewHistory(fp)
             return True
-        except Exception:
-            self.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_LOAD_FILE_FAILED")
+        except Exception as e:
+            self.OnSimpleDialog("GENERAL_HEAD_FAIL", "MSG_LOAD_FILE_FAILED", textData=str(e))
             return False
         finally:
             self.Canvas.Thaw()

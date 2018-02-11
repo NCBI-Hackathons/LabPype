@@ -322,7 +322,7 @@ class BaseWidget(Base):
         return True
 
     # -------------------------------------------------------- #
-    def UpdateIncoming(self, key=None):
+    def UpdateIncoming(self, key=None, w=None):
         if key is None:
             for a in self.Incoming:
                 self[a.key] = a.Retrieve()
@@ -442,23 +442,23 @@ class Widget(BaseWidget):
         self.UpdateDialog()
 
     @Synced
-    def OnAcceptOutgoing(self, a, w):
+    def OnAcceptOutgoing(self, key, w):
         pass
 
     @Synced
-    def OnRemoveOutgoing(self, a, w):
+    def OnRemoveOutgoing(self, key, w):
         pass
 
     @Synced
-    def OnAcceptIncoming(self, a, w):
+    def OnAcceptIncoming(self, key, w):
         self.OnAbort()
-        self.UpdateIncoming(a.key)
+        self.UpdateIncoming(key, w)
         self.UpdateDialog()
 
     @Synced
-    def OnRemoveIncoming(self, a, w):
+    def OnRemoveIncoming(self, key, w):
         self.OnAbort()
-        self.UpdateIncoming(a.key)
+        self.UpdateIncoming(key, w)
         self.UpdateDialog()
 
     @Synced
@@ -487,8 +487,10 @@ class Widget(BaseWidget):
             self.SetState("Idle")
             self.StopThread()
             self.UpdateOutgoing()
-            for w, _ in self.GetOutgoingWidget():
+            for w, key in self.GetOutgoingWidget():
                 w.OnAbort()
+                w.UpdateIncoming(key, self)
+                w.UpdateDialog()
 
     def OnShowDialog(self):
         if self.THREAD:
@@ -557,18 +559,20 @@ class Widget(BaseWidget):
     def RunDirectly(self):
         try:
             out = self.Task()
-            if self.IsState("Work"):
-                self["OUT"] = out
-                if out is None:
-                    self.SetState("Fail")
-                    self.LogErr(self.Canvas.L["WIDGET_FAIL"])
-                else:
-                    self.SetState("Done")
-                    self.LogOut(self.Canvas.L["WIDGET_DONE"])
+            with self.Canvas.Lock:
+                if self.IsState("Work"):
+                    self["OUT"] = out
+                    if out is None:
+                        self.SetState("Fail")
+                        self.LogErr(self.Canvas.L["WIDGET_FAIL"])
+                    else:
+                        self.SetState("Done")
+                        self.LogOut(self.Canvas.L["WIDGET_DONE"])
         except Exception as e:
-            if self.IsState("Work"):
-                self.SetState("Fail")
-                self.LogErr(str(e))
+            with self.Canvas.Lock:
+                if self.IsState("Work"):
+                    self.SetState("Fail")
+                    self.LogErr(str(e))
 
     # -------------------------------------------------------- #
     def OnLeaveIdle(self):
@@ -613,11 +617,11 @@ class Widget(BaseWidget):
         for w, key in self.GetOutgoingWidget():
             w.UpdateDialog()
             if w.IsState("Idle"):
-                w.UpdateIncoming(key)
+                w.UpdateIncoming(key, self)
             elif w.IsState("Fail"):
-                w.UpdateIncoming(key)
+                w.UpdateIncoming(key, self)
             elif w.IsState("Wait"):
-                w.UpdateIncoming(key)
+                w.UpdateIncoming(key, self)
                 for v, _ in w.GetIncomingWidget():
                     if not v.IsState("Done"):
                         break

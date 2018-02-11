@@ -175,17 +175,11 @@ class Canvas(UI.BaseControl):
 
     # ----------------------------------------------
     def OnCaptureLost(self, evt):
+        self.OnLeftUp(False)
+        self.OnMiddleUp(True)
+        self.OnRightUp(False)
         self.Hovered = None
-        self.Clicked = None
-        self.leftPos = None
-        self.middlePos = None
-        self.rightPos = None
-        self.SelectionArea = [0, 0]
-        self.SelectionRect = MOCK_RECT
         self.TempLink = None
-        for w in self.Widget:
-            w.SavePosition()
-        self.SetCursor(self.R["CURSOR_NORMAL"])
         self.ReDraw()
 
     def OnMouse(self, evt):
@@ -208,8 +202,9 @@ class Canvas(UI.BaseControl):
 
     def HandleMouseLeft(self, evtType, evtPos, evtShift):
         if evtType == wx.wxEVT_LEFT_DOWN or evtType == wx.wxEVT_LEFT_DCLICK:
-            if not self.HasCapture(): self.CaptureMouse()
-            if not self.HasFocus(): self.SetFocus()
+            self.CaptureMouse()
+            if not self.HasFocus():
+                self.SetFocus()
             self.leftPos = evtPos
             self.Clicked = self.Hovered
             if self.Clicked is None:
@@ -239,51 +234,91 @@ class Canvas(UI.BaseControl):
             self.SetSelectionArea(-1, evtPos)
             self.UpdateSelection()
         if evtType == wx.wxEVT_LEFT_UP:
-            if self.HasCapture(): self.ReleaseMouse()
-            self.leftPos = None
-            self.Clicked = None
-            self.SetSelectionArea(0, 0)
+            self.ReleaseMouse()
+            self.OnLeftUp()
+
+    def OnLeftUp(self, do=True):
+        self.leftPos = None
+        self.Clicked = None
+        self.SelectionArea = [0, 0]
+        self.SelectionRect = MOCK_RECT
+        if do:
             for w in self.SelectedWidget:
                 w.SavePosition()
 
     def HandleMouseMiddle(self, evtType, evtPos):
-        if self.Hovered and self.Hovered.__TYPE__ == "WIDGET":
-            if evtType == wx.wxEVT_MIDDLE_DOWN:
+        if self.Hovered and (evtType == wx.wxEVT_MIDDLE_DOWN or evtType == wx.wxEVT_MIDDLE_DCLICK):
+            if self.Hovered.__TYPE__ == "WIDGET":
                 self.OnSelect(self.Hovered)
                 for w in self.Hovered.GetLinkedWidget():
                     self.OnSelect(w)
+            elif self.Hovered.__TYPE__ == "ANCHOR":
+                for a in self.Hovered.connected:
+                    self.OnSelect(a.Widget)
+            elif self.Hovered.__TYPE__ == "LINK":
+                self.OnSelect(self.Hovered.source.Widget)
+                self.OnSelect(self.Hovered.target.Widget)
         else:
-            if evtType == wx.wxEVT_MIDDLE_DOWN:
-                if not self.HasCapture(): self.CaptureMouse()
+            if evtType == wx.wxEVT_MIDDLE_DOWN or evtType == wx.wxEVT_MIDDLE_DCLICK:
+                self.CaptureMouse()
                 self.middlePos = evtPos
                 self.SetCursor(self.R["CURSOR_MOVING"])
-            elif evtType == wx.wxEVT_MIDDLE_UP:
-                if self.HasCapture(): self.ReleaseMouse()
-                self.middlePos = None
-                self.SetCursor(self.R["CURSOR_NORMAL"])
                 for w in self.Widget:
-                    w.SavePosition()
+                    w.flagFreezeAnchor = True
+            elif evtType == wx.wxEVT_MIDDLE_UP:
+                self.ReleaseMouse()
+                self.OnMiddleUp()
             elif evtType == wx.wxEVT_MOTION:
                 for w in self.Widget:
                     w.RePosition(*(evtPos - self.middlePos))
 
+    def OnMiddleUp(self, do=True):
+        self.middlePos = None
+        self.SetCursor(self.R["CURSOR_NORMAL"])
+        if do:
+            for w in self.Widget:
+                w.flagFreezeAnchor = False
+                w.SavePosition()
+
     def HandleMouseRight(self, evtType, evtPos):
-        if evtType == wx.wxEVT_RIGHT_DOWN or evtType == wx.wxEVT_RIGHT_DCLICK:
-            self.rightPos = evtPos
-            self.SelectedLink = None
-            if self.Hovered and self.Hovered.__TYPE__ == "WIDGET":
-                self.OnSelect(self.Hovered, not self.Hovered in self.SelectedWidget)
-        elif evtType == wx.wxEVT_RIGHT_UP:
-            self.rightPos = None
+        if self.Hovered and (evtType == wx.wxEVT_RIGHT_DOWN or evtType == wx.wxEVT_RIGHT_DCLICK):
+            if self.Hovered.__TYPE__ == "WIDGET":
+                self.ToggleSelect(self.Hovered)
+                for w in self.Hovered.GetLinkedWidget():
+                    self.ToggleSelect(w)
+            elif self.Hovered.__TYPE__ == "ANCHOR":
+                for a in self.Hovered.connected:
+                    self.ToggleSelect(a.Widget)
+            elif self.Hovered.__TYPE__ == "LINK":
+                self.ToggleSelect(self.Hovered.source.Widget)
+                self.ToggleSelect(self.Hovered.target.Widget)
+        else:
+            if evtType == wx.wxEVT_RIGHT_DOWN or evtType == wx.wxEVT_RIGHT_DCLICK:
+                self.CaptureMouse()
+                self.rightPos = evtPos
+                self.SetCursor(self.R["CURSOR_MOVING"])
+                for w in self.Widget:
+                    w.flagFreezeAnchor = True
+            elif evtType == wx.wxEVT_RIGHT_UP:
+                self.ReleaseMouse()
+                self.OnRightUp()
+            elif evtType == wx.wxEVT_MOTION:
+                for w in self.Widget:
+                    w.RePosition(*(self.rightPos - evtPos))
+
+    def OnRightUp(self, do=True):
+        self.rightPos = None
+        self.SetCursor(self.R["CURSOR_NORMAL"])
+        if do:
+            for w in self.Widget:
+                w.flagFreezeAnchor = False
+                w.SavePosition()
 
     def HandleMouseMotion(self, evtPos):
         newObj = self.GetHovered(evtPos)
         if self.Hovered != newObj:
             self.Hovered = newObj
-            if hasattr(newObj, "__TYPE__"):
-                self.F.SetStatus(newObj.GetName())
-            else:
-                self.F.SetStatus("")
+            self.F.SetStatus("" if self.Hovered is None else newObj.GetName())
             return True
 
     def GetHovered(self, pos):

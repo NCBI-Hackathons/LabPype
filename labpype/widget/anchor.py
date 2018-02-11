@@ -52,8 +52,7 @@ class Anchor(Base):
         self.multiple = multiple
         self.send = send
         self.name = name
-        self.pos =self.posDefault = pos[0]
-        # self.posDefault = pos
+        self.pos = self.posDefault = pos[0]
         self.posTable = POS_TABLE[(0b1000 if "L" in pos else 0) |
                                   (0b0100 if "T" in pos else 0) |
                                   (0b0010 if "R" in pos else 0) |
@@ -162,12 +161,12 @@ class Anchor(Base):
         dest.connected.remove(self)
         if self.send:
             del self.Canvas.Link[self.Id << 12 | dest.Id]
-            dest.Widget.OnRemoveIncoming(dest, self.Widget)
-            self.Widget.OnRemoveOutgoing(self, dest.Widget)
+            dest.Widget.OnRemoveIncoming(dest.key, self.Widget)
+            self.Widget.OnRemoveOutgoing(self.key, dest.Widget)
         else:
             del self.Canvas.Link[self.Id | dest.Id << 12]
-            self.Widget.OnRemoveIncoming(self, dest.Widget)
-            dest.Widget.OnRemoveOutgoing(dest, self.Widget)
+            self.Widget.OnRemoveIncoming(self.key, dest.Widget)
+            dest.Widget.OnRemoveOutgoing(dest.key, self.Widget)
 
     def SetTarget(self, dest, evt=True):  # self always send, dest always recv
         if DetectCircularReference(dest.Widget, self.Widget):  # Check the opposite send
@@ -181,8 +180,8 @@ class Anchor(Base):
         self.connected.append(dest)
         dest.connected.append(self)
         if evt:
-            self.Widget.OnAcceptOutgoing(self, dest.Widget)
-            dest.Widget.OnAcceptIncoming(dest, self.Widget)
+            self.Widget.OnAcceptOutgoing(self.key, dest.Widget)
+            dest.Widget.OnAcceptIncoming(dest.key, self.Widget)
         rgb = self.Id << 12 | dest.Id
         pen = wx.Pen(wx.Colour((rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255), 11)
         self.Canvas.Link[rgb] = Link(self, dest, pen)

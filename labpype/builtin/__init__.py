@@ -10,6 +10,8 @@ __all__ = [
     "WIDGETS",
     "AnchorFCFS",
     "AnchorMixed",
+    "AnchorTraceable",
+    "AnchorMixedTraceable",
 ]
 
 ANCHORS = []

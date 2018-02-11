@@ -55,8 +55,8 @@ Locale.DEFAULT = {
     "MSG_UNKNOWN_WIDGET"  : "Failed to load the file.\nUnknown widget %s",
     "MSG_SINGLETON_EXIST" : "Failed to load the file.\nUnique widget already exists: %s\n"
                             "Please remove it first or open this file instead",
-    "MSG_LOAD_FILE_FAILED": "Failed to load the file!",
-    "MSG_SAVE_FILE_FAILED": "Failed to save the file!",
+    "MSG_LOAD_FILE_FAILED": "Failed to load the file!\n%s",
+    "MSG_SAVE_FILE_FAILED": "Failed to save the file!\n%s",
 
     "GENERAL_HEAD_FAIL"   : "An error has occurred",
     "GENERAL_HEAD_LOAD"   : "Load...",
