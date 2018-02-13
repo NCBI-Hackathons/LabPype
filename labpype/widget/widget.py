@@ -22,10 +22,7 @@ __all__ = [
 # ======================================================== Misc ========================================================
 def Synced(func):
     def SyncedFunc(self, *args, **kwargs):
-        if self.THREAD:
-            with self.Canvas.Lock:
-                return func(self, *args, **kwargs)
-        else:
+        with self.Canvas.Lock:
             return func(self, *args, **kwargs)
 
     return SyncedFunc
