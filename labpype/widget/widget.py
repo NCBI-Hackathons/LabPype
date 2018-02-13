@@ -76,6 +76,8 @@ class BaseWidget(Base):
                 cls.OUTGOING = (cls.OUTGOING, "Output", None)
             if cls.SAVEABLE is True:
                 cls.SAVEABLE = [str(i) for i in cls.INTERNAL] + ["OUT"]
+            elif isinstance(cls.SAVEABLE, str):
+                cls.SAVEABLE = (cls.SAVEABLE,)
             elif not cls.SAVEABLE:
                 cls.SAVEABLE = ()
             if cls.UNIQUE:
@@ -185,7 +187,7 @@ class BaseWidget(Base):
     def AddAnchor(self, send, aType, key, multiple, pos, name="", anchor=None):
         a = (anchor or Anchor)(self, aType, key, multiple, send, pos, self.Canvas.L.Get(name, "ANCHOR_NAME_"))
         (self.Outgoing if send else self.Incoming).append(a)
-        self.Data[key] = None
+        self.Data[key] = [] if multiple and not send else None
         self.Key2Anchor[key] = a
         self.Pos2Anchor[a.pos][a] = 0
 

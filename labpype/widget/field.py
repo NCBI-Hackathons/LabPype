@@ -2,10 +2,10 @@
 
 __all__ = [
     "BaseField",
-    "BooleanField",
+    "BooleanField", "BoolField",
     "LineField",
     "TextField",
-    "IntegerField",
+    "IntegerField", "IntField",
     "FloatField",
     "ChoiceField",
     "FileField",
@@ -37,6 +37,9 @@ class BooleanField(BaseField):
 
     def Validate(self, value):
         return value
+
+
+BoolField = BooleanField
 
 
 # ----------------------------------------------
@@ -97,6 +100,9 @@ class IntegerField(BaseField):
         elif isinstance(value, int):
             return value
         return None
+
+
+IntField = IntegerField
 
 
 # ----------------------------------------------

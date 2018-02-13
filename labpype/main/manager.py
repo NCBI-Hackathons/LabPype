@@ -19,10 +19,12 @@ class Manager(object):
         self.pathInstalled = os.path.join(path, "installed")
         self.pathDownloaded = os.path.join(path, "downloaded")
         self.pathTemporary = os.path.join(path, "temporary")
+        self.pathDatabase = os.path.join(path, "database")
         self.ok = all((UI.FindOrCreateDirectory(self.path),
                        UI.FindOrCreateDirectory(self.pathInstalled),
                        UI.FindOrCreateDirectory(self.pathDownloaded),
-                       UI.FindOrCreateDirectory(self.pathTemporary)))
+                       UI.FindOrCreateDirectory(self.pathTemporary),
+                       UI.FindOrCreateDirectory(self.pathDatabase)))
 
     def Init(self, frame):
         self.F = frame
@@ -296,3 +298,6 @@ class Manager(object):
 
     def PathInTemporary(self, name):
         return os.path.join(self.pathTemporary, name)
+
+    def PathInDatabase(self, name):
+        return os.path.join(self.pathDatabase, name)

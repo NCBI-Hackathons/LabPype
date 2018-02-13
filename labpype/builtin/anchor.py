@@ -47,7 +47,7 @@ class AnchorMixed(Anchor):
                         else:
                             data.append(_d[f])
             return data
-        return None
+        return None if self.single else []
 
 
 class AnchorTraceable(Anchor):
@@ -68,7 +68,7 @@ class AnchorTraceable(Anchor):
                     else:
                         data[uuid] = d[f]
             return data
-        return None
+        return None if self.single else []
 
 
 class AnchorMixedTraceable(Anchor):
@@ -97,4 +97,4 @@ class AnchorMixedTraceable(Anchor):
                         else:
                             data[uuid].append(_d[f])
             return data
-        return None
+        return None if self.single else []

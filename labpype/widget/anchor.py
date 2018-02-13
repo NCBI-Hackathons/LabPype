@@ -201,7 +201,7 @@ class Anchor(Base):
                     else:
                         data.append(dest.Widget[dest.key][f])
             return data[0] if self.single else data
-        return None
+        return None if self.single else []
 
     # ----------------------------------------------------------
     def GetType(self):
