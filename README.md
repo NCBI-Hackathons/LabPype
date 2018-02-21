@@ -4,19 +4,19 @@
 [![Python35](https://img.shields.io/badge/python-3.5-blue.svg)](https://badge.fury.io/py/LabPype)
 [![Python36](https://img.shields.io/badge/python-3.6-blue.svg)](https://badge.fury.io/py/LabPype)
 
-* [What is LabPype?](#What-is-LabPype)
-* [Getting Started](#Getting-Started)
+* [What is LabPype?](#what-is-labpype)
+* [Getting Started](#getting-started)
 * [Examples](https://ncbi-hackathons.github.io/LabPype/)
 * [Documentation](https://github.com/NCBI-Hackathons/LabPype/wiki)
     * [How to install](https://github.com/NCBI-Hackathons/LabPype/wiki/How-to-install)
     * [How to use](https://github.com/NCBI-Hackathons/LabPype/wiki/How-to-use)
     * [How to develop](https://github.com/NCBI-Hackathons/LabPype/wiki/How-to-develop)
     * [Class reference](https://github.com/NCBI-Hackathons/LabPype/wiki/Class-reference)
-* [Concept](#Concept)
-* [For Users](#For-Users)
-* [For Developers](#For-Developers)
-* [Contributing](#Contributing)
-* [Future Plans](#Future-Plans)
+* [Concept](#concept)
+* [For Users](#for-users)
+* [For Developers](#for-developers)
+* [Contributing](#contributing)
+* [Future Plans](#future-plans)
 
 ### What is LabPype
 
