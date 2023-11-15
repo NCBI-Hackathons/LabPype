@@ -5,8 +5,8 @@ setup(
     version="0.7.8",
     description="A Framework for Creating Pipeline Software",
     url="https://github.com/NCBI-Hackathons/LabPype",
-    author="Yadi Zhou",
-    author_email="yadizhou90@gmail.com",
+    author="YZ",
+    author_email="",
     license="GPL-3.0",
     classifiers=[
         "Development Status :: 3 - Alpha",
